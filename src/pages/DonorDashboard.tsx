@@ -12,61 +12,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+// Mock data for demonstration purposes
+const mockDonations = [
+  { id: '1', amount: 100, description: 'Food Donation', payment_reference: 'REF123', created_at: '2023-10-01', currency: 'ZAR' },
+  { id: '2', amount: 200, description: 'Clothing Donation', payment_reference: 'REF124', created_at: '2023-10-02', currency: 'ZAR' },
+];
+
 const DonorDashboard = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [donations, setDonations] = useState<any[]>([]);
+  const [donations, setDonations] = useState(mockDonations);
   const [totalDonated, setTotalDonated] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
-
-  const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching user role:', error);
-      return null;
-    }
-    return data?.role;
-  };
 
   useEffect(() => {
-    const initialize = async () => {
-      if (!loading && !user) {
-        navigate('/auth');
-      } else if (user) {
-        const userRole = await fetchUserRole(user.id);
-        setRole(userRole);
+    const total = donations.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+    setTotalDonated(total);
+  }, [donations]);
 
-        // Redirect if user is not a donor
-        if (userRole === 'admin') navigate('/admin-dashboard');
-        else if (userRole === 'volunteer') navigate('/volunteer-dashboard');
-        else if (userRole !== 'donor') navigate('/auth'); // fallback
-        else loadDonations();
-      }
-    };
-    initialize();
-  }, [user, loading, navigate]);
-
-  const loadDonations = async () => {
-    const { data } = await supabase
-      .from('donations')
-      .select('*')
-      .eq('donor_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      setDonations(data);
-      const total = data.reduce((sum, d) => sum + Number(d.amount), 0);
-      setTotalDonated(total);
-    }
-  };
-
+  // Handle new donation submission
   const handleDonation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -74,25 +39,23 @@ const DonorDashboard = () => {
     const description = formData.get('description') as string;
     const paymentMethod = formData.get('paymentMethod') as string;
 
-    const { error } = await supabase.from('donations').insert({
-      donor_id: user?.id,
-      amount,
-      description,
-      payment_method: paymentMethod,
-      payment_reference: `REF-${Date.now()}`,
-    });
-
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      return;
-    }
-
+    // Simulate adding donation
+    setDonations([
+      ...donations,
+      {
+        id: `${donations.length + 1}`,
+        amount,
+        description,
+        payment_reference: `REF-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        currency: 'ZAR',
+      },
+    ]);
     toast({ title: 'Thank you!', description: 'Your donation has been recorded.' });
     setIsDialogOpen(false);
-    loadDonations();
   };
 
-  if (loading || !user || role === null) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Heart className="h-12 w-12 text-primary fill-primary animate-pulse" />
@@ -142,6 +105,7 @@ const DonorDashboard = () => {
                     {donations.length} donation{donations.length !== 1 ? 's' : ''}
                   </p>
                 </div>
+
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button size="lg">
@@ -156,17 +120,35 @@ const DonorDashboard = () => {
                     <form onSubmit={handleDonation} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="amount">Amount (ZAR)</Label>
-                        <Input id="amount" name="amount" type="number" step="0.01" min="1" placeholder="100.00" required />
+                        <Input
+                          id="amount"
+                          name="amount"
+                          type="number"
+                          step="0.01"
+                          min="1"
+                          placeholder="100.00"
+                          required
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="description">Description (Optional)</Label>
-                        <Textarea id="description" name="description" placeholder="What is this donation for?" />
+                        <Textarea
+                          id="description"
+                          name="description"
+                          placeholder="What is this donation for?"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="paymentMethod">Payment Method</Label>
-                        <Input id="paymentMethod" name="paymentMethod" placeholder="e.g., Credit Card, Bank Transfer" />
+                        <Input
+                          id="paymentMethod"
+                          name="paymentMethod"
+                          placeholder="e.g., Credit Card, Bank Transfer"
+                        />
                       </div>
-                      <Button type="submit" className="w-full">Submit Donation</Button>
+                      <Button type="submit" className="w-full">
+                        Submit Donation
+                      </Button>
                     </form>
                   </DialogContent>
                 </Dialog>
@@ -178,9 +160,8 @@ const DonorDashboard = () => {
         <div>
           <h2 className="text-2xl font-bold mb-4">Donation History</h2>
           <div className="space-y-4">
-            {donations.map((donation) => (
-              <DonationCard key={donation.id} {...donation} />
-            ))}
+            
+        
             {donations.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
                 You haven't made any donations yet.

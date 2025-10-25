@@ -3,82 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { EmergencyAlert } from '@/components/EmergencyAlert';
-import { Heart, Users, DollarSign, Bell, LogOut } from 'lucide-react';
+import { DollarSign, Heart, LogOut } from 'lucide-react';  // Import DollarSign from lucide-react
+import { EmergencyAlert } from '@/components/EmergencyAlert';  // Import EmergencyAlert from your components folder
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-// Load alerts from Supabase
-const fetchAlerts = async () => {
-  try {
-    const { data, error } = await supabase.from('emergency_alerts').select('*');
-    if (error) {
-      console.error('Error fetching alerts:', error);
-      return [];
-    }
-    return data || [];
-  } catch (err) {
-    console.error('Unexpected error:', err);
-    return [];
-  }
-};
 
 const Index = () => {
   const { user, userRole, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [alerts, setAlerts] = useState<any[]>([]);
 
-  // Redirect logged-in users to their dashboard
+  // Fetch emergency alerts
   useEffect(() => {
-    if (!loading && user && userRole) {
-      switch (userRole) {
-        case 'admin':
-          navigate('/admin', { replace: true });
-          break;
-        case 'volunteer':
-          navigate('/volunteer', { replace: true });
-          break;
-        case 'donor':
-          navigate('/donor', { replace: true });
-          break;
-      }
-    }
-  }, [user, userRole, loading, navigate]);
-
-  // Load alerts and subscribe to real-time changes
-  useEffect(() => {
-    let channel: ReturnType<typeof supabase['channel']> | null = null;
-
-    const initAlerts = async () => {
-      const initialAlerts = await fetchAlerts();
-      setAlerts(initialAlerts);
-
-      channel = supabase
-        .channel('emergency_alerts')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'emergency_alerts' },
-          async () => {
-            const updatedAlerts = await fetchAlerts();
-            setAlerts(updatedAlerts);
-          }
-        )
-        .subscribe();
+    const loadAlerts = async () => {
+      const { data, error } = await supabase.from('emergency_alerts').select('*');
+      if (error) console.error('Error fetching alerts:', error);
+      setAlerts(data || []);
     };
-
-    initAlerts();
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    loadAlerts();
   }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Heart className="h-12 w-12 text-primary fill-primary animate-pulse mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+        <Heart className="h-12 w-12 text-primary fill-primary animate-pulse mx-auto mb-4" />
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -98,7 +46,9 @@ const Index = () => {
             </div>
             {user && (
               <div className="flex items-center gap-2">
-                <Button onClick={() => navigate(`/${userRole}`)}>My Dashboard</Button>
+                <Button onClick={() => navigate(`/volunteer`)}>Go to Dashboard</Button>
+                <Button onClick={() => navigate(`/admin`)}>Go to Dashboard</Button>
+                <Button onClick={() => navigate(`/donor`)}>Go to Dashboard</Button>
                 <Button variant="outline" size="icon" onClick={signOut}>
                   <LogOut className="h-4 w-4" />
                 </Button>
@@ -124,7 +74,7 @@ const Index = () => {
                 Get Started
               </Button>
               <Button size="lg" variant="outline">
-                <Bell className="mr-2 h-5 w-5" />
+                <DollarSign className="mr-2 h-5 w-5" />
                 View Active Emergencies
               </Button>
             </div>
@@ -139,7 +89,7 @@ const Index = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
+                  <DollarSign className="h-5 w-5 text-primary" />
                   Active Volunteers
                 </CardTitle>
               </CardHeader>
@@ -151,7 +101,7 @@ const Index = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-destructive" />
+                  <DollarSign className="h-5 w-5 text-destructive" />
                   Active Emergencies
                 </CardTitle>
               </CardHeader>

@@ -18,43 +18,37 @@ const Auth = () => {
   const { toast } = useToast();
 
   // Fetch user role from Supabase
-  const getUserRole = async (userId: string): Promise<UserRole | null> => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
+const getUserRole = async (userId: string): Promise<UserRole | null> => {
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId)
+    .single();
 
-    if (error) {
-      console.error('Error fetching user role:', error);
-      return null;
-    }
+  if (error) {
+    console.error('Error fetching user role:', error);
+    return null;
+  }
 
-    return data?.role as UserRole;
-  };
+  return data?.role as UserRole;
+};
+
 
   // Redirect already logged-in users
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
-      if (user) {
-        const role = await getUserRole(user.id);
-        switch (role) {
-          case 'admin':
-            navigate('/admin', { replace: true });
-            break;
-          case 'volunteer':
-            navigate('/volunteer', { replace: true });
-            break;
-          case 'donor':
-            navigate('/donor', { replace: true });
-            break;
-        }
-      }
-    };
-    checkSession();
-  }, [navigate]);
+useEffect(() => {
+  const checkSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    const user = data.session?.user;
+    if (user) {
+      const role = await getUserRole(user.id);
+      if (role === 'admin') navigate('/admin', { replace: true });
+      else if (role === 'volunteer') navigate('/volunteer', { replace: true });
+      else if (role === 'donor') navigate('/donor', { replace: true });
+    }
+  };
+  checkSession();
+}, [navigate]);
+
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -131,21 +125,17 @@ const Auth = () => {
       return;
     }
 
-    if (sessionData.user) {
-      const role = await getUserRole(sessionData.user.id);
-      toast({ title: 'Welcome back!', description: 'You have successfully signed in.' });
+   if (sessionData.user) {
+  const role = await getUserRole(sessionData.user.id);
+  console.log('User role:', role); // Debugging
+  toast({ title: 'Welcome back!', description: 'You have successfully signed in.' });
 
-      switch (role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'volunteer':
-          navigate('/volunteer');
-          break;
-        case 'donor':
-          navigate('/donor');
-          break;
-      }
+  // Redirect based on role
+  if (role === 'admin') navigate('/admin');
+  else if (role === 'volunteer') navigate('/volunteer');
+  else if (role === 'donor') navigate('/donor');
+  else navigate('/');
+
     }
 
     setIsLoading(false);
