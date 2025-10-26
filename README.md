@@ -1,73 +1,60 @@
-# Welcome to your Lovable project
+# SARCS Connect Care
 
-## Project info
+## Overview
+**SARCS Connect Care** is a disaster response platform that facilitates volunteer management, donation tracking, and emergency alerts. It provides an admin dashboard for managing volunteers, shifts, donations, and user roles. Volunteers can sign up for shifts based on different disasters, and donors can track their contributions.
 
-**URL**: https://lovable.dev/projects/43a384b0-e2b4-45c3-9a5e-cc13be7ee2d0
+## Features
 
-## How can I edit this code?
+### Admin Dashboard:
+- Real-time monitoring of emergency alerts, shifts, and user activities.
+- Ability to create and manage volunteer shifts.
+- User management features, including promotion to admin and user search.
+- Donation tracking and management.
 
-There are several ways of editing your application.
+### Volunteer Dashboard:
+- View available volunteer shifts for various disasters.
+- Sign up for shifts or cancel existing sign-ups.
+- Track personal shift history.
 
-**Use Lovable**
+### Donor Features:
+- Track donations, manage payment methods, and see the total amount donated.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/43a384b0-e2b4-45c3-9a5e-cc13be7ee2d0) and start prompting.
+### Emergency Alerts:
+- View and manage active emergency alerts.
+- Create new alerts for volunteers and donors.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+To run this project locally, you'll need:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- [Node.js](https://nodejs.org/) and npm (Node Package Manager)
+- [Supabase](https://supabase.com/) account for managing backend services
 
-Follow these steps:
+### Installation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. **Clone the repository:**
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+bash 
+git clone https://github.com/your-repository/sarcs-connect-care.git
+cd sarcs-connect-care
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Install dependencies:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+npm install
 
-**Edit a file directly in GitHub**
+3. Set up Supabase:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a Supabase account and project.
 
-**Use GitHub Codespaces**
+Set up tables for donations, shifts, profiles, user roles, etc.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Configure your .env file with Supabase API keys and project URL.
 
-## What technologies are used for this project?
+Running the Project Locally
 
-This project is built with:
+Start the development server:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/43a384b0-e2b4-45c3-9a5e-cc13be7ee2d0) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+--npm run dev 
+Open your browser and visit http://localhost:3000
