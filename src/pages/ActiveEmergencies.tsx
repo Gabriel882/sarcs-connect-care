@@ -1,65 +1,73 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { EmergencyAlert } from '@/components/EmergencyAlert';  // Importing the EmergencyAlert component
-import { ArrowLeft, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client'; // Assuming you're using Supabase to fetch data
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { EmergencyAlert } from "@/components/EmergencyAlert";
+import { ArrowLeft, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
+type SeverityLevel = "low" | "medium" | "high" | "critical";
 
 interface Alert {
   id: string;
   title: string;
   description: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: SeverityLevel;
   location: string;
   created_at: string;
 }
 
+/**
+ * Displays all currently active emergency alerts from Supabase.
+ */
 const ActiveEmergencies = () => {
   const navigate = useNavigate();
-  const [alerts, setAlerts] = useState<Alert[]>([]); // State to hold fetched alerts
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch active emergencies from Supabase (or your API)
+  /**
+   * Fetch active emergencies from Supabase.
+   */
   const fetchActiveEmergencies = async () => {
-  setLoading(true);
-  setError(null);
+    setLoading(true);
+    setError(null);
 
-  try {
-    // Fetching data from the 'emergency_alerts' table
-    const { data, error } = await supabase
-      .from<'emergency_alerts', any>('emergency_alerts') // Correct table name
-      .select('*')
-      .eq('is_active', true); // Use 'is_active' field instead of 'status'
+    try {
+      const { data, error } = await supabase
+        .from("emergency_alerts")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(error.message);
+      if (error) throw error;
+
+      // Transform Supabase data into Alert type
+      const transformedAlerts =
+        data?.map((item) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          severity: item.severity as SeverityLevel,
+          location: item.location,
+          created_at: item.created_at,
+        })) || [];
+
+      setAlerts(transformedAlerts);
+    } catch (err) {
+      console.error("Error fetching emergencies:", err);
+      setError("Failed to fetch active emergencies. Please try again.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Transform the data to match the Alert type
-    const transformedAlerts = data.map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      severity: item.severity,
-      location: item.location,
-      created_at: item.created_at,
-    }));
-
-    setAlerts(transformedAlerts); // Set the correctly typed data
-
-  } catch (err: any) {
-    setError('Failed to fetch active emergencies');
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // Fetch active emergencies when the component mounts
+  // Fetch emergencies on mount
   useEffect(() => {
     fetchActiveEmergencies();
   }, []);
@@ -70,18 +78,18 @@ const ActiveEmergencies = () => {
       <header className="bg-background border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 text-destructive">
-              <RefreshCw className="h-8 w-8 text-primary" />
-            </div>
+            <RefreshCw className="h-8 w-8 text-primary animate-spin-slow" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Active Emergencies</h1>
+              <h1 className="text-2xl font-bold text-foreground">
+                Active Emergencies
+              </h1>
               <p className="text-sm text-muted-foreground">
                 Current crises requiring immediate assistance
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/')}>
+            <Button variant="outline" onClick={() => navigate("/")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
             </Button>
@@ -89,13 +97,15 @@ const ActiveEmergencies = () => {
         </div>
       </header>
 
-      {/* Content */}
+      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {loading ? (
           <Card className="max-w-lg mx-auto text-center py-12">
             <CardHeader>
               <CardTitle>Loading Active Emergencies...</CardTitle>
-              <CardDescription>Fetching the latest emergencies, please wait.</CardDescription>
+              <CardDescription>
+                Fetching the latest emergencies, please wait.
+              </CardDescription>
             </CardHeader>
           </Card>
         ) : error ? (
@@ -110,7 +120,8 @@ const ActiveEmergencies = () => {
             <CardHeader>
               <CardTitle>No Active Emergencies</CardTitle>
               <CardDescription>
-                There are currently no ongoing emergencies. Please check back later.
+                There are currently no ongoing emergencies. Please check back
+                later.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -130,14 +141,19 @@ const ActiveEmergencies = () => {
         )}
       </main>
 
-      {/* Floating Action Button for Refresh */}
+      {/* Floating Refresh Button */}
       <div className="fixed bottom-6 right-6">
-                <Button
+        <Button
           variant="secondary"
           className="rounded-full p-4 shadow-lg"
-          onClick={fetchActiveEmergencies} // Trigger refresh on button click
+          onClick={fetchActiveEmergencies}
+          disabled={loading}
         >
-          <RefreshCw className="h-6 w-6 text-white" />
+          <RefreshCw
+            className={`h-6 w-6 text-white ${
+              loading ? "animate-spin" : ""
+            }`}
+          />
         </Button>
       </div>
     </div>
@@ -145,4 +161,3 @@ const ActiveEmergencies = () => {
 };
 
 export default ActiveEmergencies;
-

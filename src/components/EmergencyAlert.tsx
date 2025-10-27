@@ -1,40 +1,20 @@
-// EmergencyAlert Component
-import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, AlertTriangle, Clock } from "lucide-react";
+
+type SeverityLevel = "low" | "medium" | "high" | "critical";
 
 interface EmergencyAlertProps {
   title: string;
   description: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: SeverityLevel;
   location: string;
   createdAt: string;
 }
 
-const severityConfig = {
-  critical: {
-    icon: AlertCircle,
-    badge: 'destructive',
-    color: 'text-destructive',
-  },
-  high: {
-    icon: AlertTriangle,
-    badge: 'destructive',
-    color: 'text-destructive',
-  },
-  medium: {
-    icon: AlertTriangle,
-    badge: 'default',
-    color: 'text-warning',
-  },
-  low: {
-    icon: Info,
-    badge: 'secondary',
-    color: 'text-accent',
-  },
-};
-
+/**
+ * Displays a single emergency alert card with severity-based colors.
+ */
 export const EmergencyAlert = ({
   title,
   description,
@@ -42,33 +22,47 @@ export const EmergencyAlert = ({
   location,
   createdAt,
 }: EmergencyAlertProps) => {
-  const config = severityConfig[severity];
-  const Icon = config.icon;
+  // Define color scheme for severity levels
+  const severityStyles: Record<
+    SeverityLevel,
+    { label: string; color: string }
+  > = {
+    low: { label: "Low", color: "bg-green-500" },
+    medium: { label: "Medium", color: "bg-yellow-500" },
+    high: { label: "High", color: "bg-orange-500" },
+    critical: { label: "Critical", color: "bg-red-600" },
+  };
+
+  const formattedDate = new Date(createdAt).toLocaleString();
 
   return (
-    <Card className="border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow duration-300">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <Icon className={`h-6 w-6 mt-1 ${config.color}`} />
-          <div className="flex-1 space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-xl text-foreground">{title}</h3>
-              <Badge
-                variant={config.badge as 'destructive' | 'default' | 'secondary'}
-                className="capitalize text-sm"
-              >
-                {severity}
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">{description}</p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>📍 {location}</span>
-              <span>🕒 {format(new Date(createdAt), 'PPp')}</span>
-            </div>
+    <Card className="border-l-4 shadow-md transition-all hover:shadow-lg">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+        </div>
+        <Badge className={`${severityStyles[severity].color} text-white`}>
+          {severityStyles[severity].label}
+        </Badge>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          {description}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-2">
+          <div className="flex items-center gap-1">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span>{location}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Clock className="h-4 w-4 text-primary" />
+            <span>{formattedDate}</span>
           </div>
         </div>
       </CardContent>
     </Card>
   );
 };
-

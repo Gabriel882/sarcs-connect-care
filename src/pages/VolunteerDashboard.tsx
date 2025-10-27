@@ -2,29 +2,30 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ShiftCard } from '@/components/ShiftCard';
-import { Heart, LogOut, Plus, Home, Calendar, Search, DollarSign, Users } from 'lucide-react';
+import { ShiftCard, Shift } from '@/components/ShiftCard'; // ✅ Import the Shift type
+import { Heart, LogOut, Home, Calendar, DollarSign } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/components/ui/use-toast'; 
 import { useToast } from '@/hooks/use-toast';
-import { Input } from '@/components/ui/input';  // Import the Input component here
+import { Input } from '@/components/ui/input';
 import { StatsCard } from '@/components/admin/StatsCard';
-import { DonationCard } from '@/components/DonationCard';
 
 const VolunteerDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const [availableShifts, setAvailableShifts] = useState<any[]>([]);
-  const [myShifts, setMyShifts] = useState<any[]>([]);
+// Inside your component:
+const { user } = useAuth();
+  const [availableShifts, setAvailableShifts] = useState<Shift[]>([]);
+  const [myShifts, setMyShifts] = useState<Shift[]>([]);
   const [signupIds, setSignupIds] = useState<Set<string>>(new Set());
-  const [donations, setDonations] = useState<any[]>([]);
-
   const [stats, setStats] = useState({
     totalShifts: 0,
     totalDonations: 0,
+    
   });
 
-  // Load available shifts for volunteering
+  // ✅ Load available shifts
   const loadShifts = async () => {
     const { data, error } = await supabase
       .from('volunteer_shifts')
@@ -34,118 +35,151 @@ const VolunteerDashboard = () => {
 
     if (error) {
       toast({
-        title: 'Error',
+        title: 'Error loading shifts',
         description: error.message,
         variant: 'destructive',
       });
-    } else if (data) {
-      setAvailableShifts(data);
+    } else {
+      // ✅ Ensure data conforms to Shift type
+      const formatted = (data || []).map((s) => ({
+        ...s,
+        status: (s.status as 'open' | 'completed' | 'assigned') || 'open',
+      }));
+      setAvailableShifts(formatted);
     }
   };
 
-  // Load shifts that the user has signed up for
-  const loadMyShifts = async () => {
-    const { data: signups, error } = await supabase
-      .from('shift_signups')
-      .select('*, volunteer_shifts(*)')
-; // Bypass auth by using a mock user ID
+ // ✅ Load shifts the volunteer signed up for
+const loadMyShifts = async () => {
+  if (!user) {
+    console.warn('User not logged in — skipping shift load');
+    return;
+  }
 
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else if (signups) {
-      setMyShifts(signups.map((s) => s.volunteer_shifts));
-      setSignupIds(new Set(signups.map((s) => s.shift_id)));
-    }
-  };
+  const { data: signups, error } = await supabase
+    .from('shift_signups')
+    .select('shift_id, volunteer_shifts(*)')
+    .eq('volunteer_id', user.id); // ✅ use real UUID from Supabase Auth
 
-  // Handle the signup process for a volunteer shift
-  const handleSignUp = async (shiftId: string) => {
-    const { error } = await supabase.from('shift_signups').insert({
-      shift_id: shiftId,
-      volunteer_id: 'mock-user-id', // Use mock user ID for bypass
-    });
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  if (error) {
     toast({
-      title: 'Success!',
-      description: 'You have signed up for this shift.',
+      title: 'Error loading your shifts',
+      description: error.message,
+      variant: 'destructive',
     });
+  } else if (signups) {
+    const formatted = signups.map((s) => ({
+      ...s.volunteer_shifts,
+      status:
+        (s.volunteer_shifts.status as 'open' | 'completed' | 'assigned') || 'open',
+    }));
+    setMyShifts(formatted);
+    setSignupIds(new Set(signups.map((s) => s.shift_id)));
+  }
+};
 
-    loadShifts();
-    loadMyShifts();
-  };
+// ✅ Sign up for a shift
+const handleSignUp = async (shiftId: string) => {
+  if (!user) {
+    toast({
+      title: 'Not logged in',
+      description: 'You must be logged in to sign up for a shift.',
+      variant: 'destructive',
+    });
+    return;
+  }
 
-  // Handle cancelling the shift signup
-  const handleCancel = async (shiftId: string) => {
-    const { error } = await supabase
-      .from('shift_signups')
-      .delete()
-      .eq('shift_id', shiftId)
-      .eq('volunteer_id', 'mock-user-id'); // Use mock user ID for bypass
+  const { error } = await supabase.from('shift_signups').insert({
+    shift_id: shiftId,
+    volunteer_id: user.id, // ✅ use real UUID
+  });
 
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-      return;
-    }
+  if (error) {
+    toast({
+      title: 'Error signing up',
+      description: error.message,
+      variant: 'destructive',
+    });
+  } else {
+    toast({
+      title: 'Signed up!',
+      description: 'You have successfully signed up for the shift.',
+    });
+    await loadShifts();
+    await loadMyShifts();
+  }
+};
 
+// ✅ Cancel signup
+const handleCancel = async (shiftId: string) => {
+  if (!user) {
+    toast({
+      title: 'Not logged in',
+      description: 'You must be logged in to cancel a shift.',
+      variant: 'destructive',
+    });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('shift_signups')
+    .delete()
+    .eq('shift_id', shiftId)
+    .eq('volunteer_id', user.id); // ✅ use real UUID
+
+  if (error) {
+    toast({
+      title: 'Error cancelling shift',
+      description: error.message,
+      variant: 'destructive',
+    });
+  } else {
     toast({
       title: 'Cancelled',
-      description: 'Your shift signup has been cancelled.',
+      description: 'You have cancelled your shift signup.',
     });
+    await loadShifts();
+    await loadMyShifts();
+  }
+};
 
-    loadShifts();
-    loadMyShifts();
-  };
-
-  // Load total donations for stats
+  // ✅ Load donation and shift stats
   const loadStats = async () => {
     const { data: donationData } = await supabase.from('donations').select('amount');
-    const totalDonations = donationData?.reduce((sum: number, donation: any) => sum + donation.amount, 0);
+    const totalDonations = donationData?.reduce(
+      (sum, d) => sum + (d.amount || 0),
+      0
+    ) || 0;
 
-    setStats((prevStats: any) => ({
-      ...prevStats,
+    setStats({
       totalShifts: availableShifts.length,
-      totalDonations: totalDonations || 0,
-    }));
+      totalDonations,
+    });
   };
 
-  // Load donations data
-  const loadDonations = async () => {
-    const { data } = await supabase.from('donations').select('*');
-    if (data) setDonations(data);
-  };
-
-  // Search users or shifts
+  // ✅ Search shifts
   const searchShifts = async (query: string) => {
+    if (!query.trim()) {
+      loadShifts();
+      return;
+    }
+
     const { data } = await supabase
       .from('volunteer_shifts')
       .select('*')
       .ilike('title', `%${query}%`);
-    if (data) setAvailableShifts(data);
+
+    const formatted = (data || []).map((s) => ({
+      ...s,
+      status: (s.status as 'open' | 'completed' | 'assigned') || 'open',
+    }));
+    setAvailableShifts(formatted);
   };
 
-  // Load all data on mount
   useEffect(() => {
     loadShifts();
     loadMyShifts();
     loadStats();
-    loadDonations();
   }, []);
 
   return (
@@ -158,7 +192,9 @@ const VolunteerDashboard = () => {
               <Heart className="h-8 w-8 text-primary fill-primary" />
               <div>
                 <h1 className="text-2xl font-bold">Volunteer Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Manage your volunteer shifts</p>
+                <p className="text-sm text-muted-foreground">
+                  Manage your volunteer activities
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -174,29 +210,26 @@ const VolunteerDashboard = () => {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Content */}
       <main className="container mx-auto px-4 py-8">
-        {/* Stats Overview */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard title="Total Shifts" value={stats.totalShifts} icon={Calendar} />
           <StatsCard title="Total Donations" value={`ZAR ${stats.totalDonations}`} icon={DollarSign} />
         </div>
 
-        {/* Admin Tabs */}
+        {/* Tabs */}
         <Tabs defaultValue="available">
           <TabsList>
-            <TabsTrigger value="available">
-              <Calendar className="mr-2 h-4 w-4" />
-              Available Shifts
-            </TabsTrigger>
+            <TabsTrigger value="available">Available Shifts</TabsTrigger>
             <TabsTrigger value="my-shifts">My Shifts</TabsTrigger>
           </TabsList>
 
-          {/* Available Shifts Tab */}
+          {/* Available Shifts */}
           <TabsContent value="available" className="mt-6">
             <div className="flex justify-between mb-6">
               <Input
-                placeholder="Search Shifts"
+                placeholder="Search shifts..."
                 className="w-1/2"
                 onChange={(e) => searchShifts(e.target.value)}
               />
@@ -206,7 +239,7 @@ const VolunteerDashboard = () => {
                 availableShifts.map((shift) => (
                   <ShiftCard
                     key={shift.id}
-                    {...shift}
+                    shift={shift}
                     isSignedUp={signupIds.has(shift.id)}
                     onSignUp={handleSignUp}
                     onCancel={handleCancel}
@@ -220,21 +253,21 @@ const VolunteerDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* My Shifts Tab */}
+          {/* My Shifts */}
           <TabsContent value="my-shifts" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {myShifts.length > 0 ? (
                 myShifts.map((shift) => (
                   <ShiftCard
                     key={shift.id}
-                    {...shift}
+                    shift={shift}
                     isSignedUp={true}
                     onCancel={handleCancel}
                   />
                 ))
               ) : (
                 <p className="col-span-full text-center text-muted-foreground py-12">
-                  You haven't signed up for any shifts yet.
+                  You haven’t signed up for any shifts yet.
                 </p>
               )}
             </div>

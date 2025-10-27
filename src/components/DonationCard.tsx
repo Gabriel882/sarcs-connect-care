@@ -1,23 +1,14 @@
-import { DollarSign } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { DollarSign } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { Donation } from "@/pages/DonorDashboard"; // ✅ import type
 
 interface DonationCardProps {
-  amount: number;
-  currency: string;
-  description?: string;
-  paymentMethod?: string;
-  createdAt: string;
+  donation: Donation;
 }
 
-export const DonationCard = ({
-  amount,
-  currency,
-  description,
-  paymentMethod,
-  createdAt,
-}: DonationCardProps) => {
+export const DonationCard = ({ donation }: DonationCardProps) => {
   return (
     <Card>
       <CardContent className="p-4">
@@ -28,15 +19,19 @@ export const DonationCard = ({
           <div className="flex-1 space-y-1">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">
-                {currency} {amount.toFixed(2)}
+                {donation.currency} {donation.amount.toFixed(2)}
               </h3>
-              <Badge variant="secondary">{paymentMethod || 'Donation'}</Badge>
+              <Badge variant="secondary">
+                {donation.payment_method || "Donation"}
+              </Badge>
             </div>
-            {description && (
-              <p className="text-sm text-muted-foreground">{description}</p>
+            {donation.description && (
+              <p className="text-sm text-muted-foreground">
+                {donation.description}
+              </p>
             )}
             <p className="text-xs text-muted-foreground">
-              {format(new Date(createdAt), 'PPp')}
+              {format(new Date(donation.created_at), "PPp")}
             </p>
           </div>
         </div>
