@@ -1,3 +1,4 @@
+// EmergencyAlert Component
 import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,19 +35,28 @@ const severityConfig = {
   },
 };
 
-export const EmergencyAlert = ({ title, description, severity, location, createdAt }: EmergencyAlertProps) => {
+export const EmergencyAlert = ({
+  title,
+  description,
+  severity,
+  location,
+  createdAt,
+}: EmergencyAlertProps) => {
   const config = severityConfig[severity];
   const Icon = config.icon;
 
   return (
-    <Card className="border-l-4 border-l-primary">
-      <CardContent className="p-4">
+    <Card className="border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow duration-300">
+      <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <Icon className={`h-6 w-6 mt-1 ${config.color}`} />
           <div className="flex-1 space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-lg">{title}</h3>
-              <Badge variant={config.badge as any} className="capitalize">
+              <h3 className="font-semibold text-xl text-foreground">{title}</h3>
+              <Badge
+                variant={config.badge as 'destructive' | 'default' | 'secondary'}
+                className="capitalize text-sm"
+              >
                 {severity}
               </Badge>
             </div>
@@ -61,3 +71,4 @@ export const EmergencyAlert = ({ title, description, severity, location, created
     </Card>
   );
 };
+

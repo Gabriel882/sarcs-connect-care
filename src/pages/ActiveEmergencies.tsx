@@ -1,53 +1,68 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmergencyAlert } from '@/components/EmergencyAlert';  // Importing the EmergencyAlert component
 import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client'; // Assuming you're using Supabase to fetch data
 
 type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
 
 interface Alert {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  severity: SeverityLevel;
+  severity: 'critical' | 'high' | 'medium' | 'low';
   location: string;
   created_at: string;
 }
 
 const ActiveEmergencies = () => {
   const navigate = useNavigate();
+  const [alerts, setAlerts] = useState<Alert[]>([]); // State to hold fetched alerts
+  const [loading, setLoading] = useState<boolean>(true); // Loading state
+  const [error, setError] = useState<string | null>(null); // Error state
 
-  // ✅ Hardcoded alerts with correct literal types
-  const alerts: Alert[] = [
-    {
-      id: 1,
-      title: 'Flood in Cape Town',
-      description:
-        'Severe flooding in the downtown area. Immediate assistance required for evacuation and relief.',
-      severity: 'high',
-      location: 'Cape Town, Western Cape',
-      created_at: '2023-10-27T10:00:00Z',
-    },
-    {
-      id: 2,
-      title: 'Wildfire in Limpopo',
-      description:
-        'A large wildfire is spreading rapidly. Volunteers needed for containment and firefighting efforts.',
-      severity: 'medium',
-      location: 'Limpopo, Northern Province',
-      created_at: '2023-10-26T15:30:00Z',
-    },
-    {
-      id: 3,
-      title: 'Earthquake in Johannesburg',
-      description:
-        'A moderate earthquake has struck Johannesburg. Immediate relief teams needed for damage assessment and search-and-rescue operations.',
-      severity: 'critical',
-      location: 'Johannesburg, Gauteng',
-      created_at: '2023-10-25T08:45:00Z',
-    },
-  ];
+  // Fetch active emergencies from Supabase (or your API)
+  const fetchActiveEmergencies = async () => {
+  setLoading(true);
+  setError(null);
+
+  try {
+    // Fetching data from the 'emergency_alerts' table
+    const { data, error } = await supabase
+      .from<'emergency_alerts', any>('emergency_alerts') // Correct table name
+      .select('*')
+      .eq('is_active', true); // Use 'is_active' field instead of 'status'
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Transform the data to match the Alert type
+    const transformedAlerts = data.map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      severity: item.severity,
+      location: item.location,
+      created_at: item.created_at,
+    }));
+
+    setAlerts(transformedAlerts); // Set the correctly typed data
+
+  } catch (err: any) {
+    setError('Failed to fetch active emergencies');
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // Fetch active emergencies when the component mounts
+  useEffect(() => {
+    fetchActiveEmergencies();
+  }, []);
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -76,7 +91,21 @@ const ActiveEmergencies = () => {
 
       {/* Content */}
       <main className="container mx-auto px-4 py-8">
-        {alerts.length === 0 ? (
+        {loading ? (
+          <Card className="max-w-lg mx-auto text-center py-12">
+            <CardHeader>
+              <CardTitle>Loading Active Emergencies...</CardTitle>
+              <CardDescription>Fetching the latest emergencies, please wait.</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : error ? (
+          <Card className="max-w-lg mx-auto text-center py-12">
+            <CardHeader>
+              <CardTitle>Error</CardTitle>
+              <CardDescription>{error}</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : alerts.length === 0 ? (
           <Card className="max-w-lg mx-auto text-center py-12">
             <CardHeader>
               <CardTitle>No Active Emergencies</CardTitle>
@@ -103,7 +132,11 @@ const ActiveEmergencies = () => {
 
       {/* Floating Action Button for Refresh */}
       <div className="fixed bottom-6 right-6">
-        <Button variant="secondary" className="rounded-full p-4 shadow-lg">
+                <Button
+          variant="secondary"
+          className="rounded-full p-4 shadow-lg"
+          onClick={fetchActiveEmergencies} // Trigger refresh on button click
+        >
           <RefreshCw className="h-6 w-6 text-white" />
         </Button>
       </div>
@@ -112,3 +145,4 @@ const ActiveEmergencies = () => {
 };
 
 export default ActiveEmergencies;
+

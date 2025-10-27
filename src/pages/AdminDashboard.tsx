@@ -310,54 +310,7 @@ const AdminDashboard = () => {
         </Tabs>
       </main>
 
-      {/* Emergency Alert Creation Dialog */}
-      <Dialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="icon" onClick={() => setIsAlertDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Emergency Alert</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateAlert}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" name="title" required />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" name="description" required />
-              </div>
-              <div>
-                <Label htmlFor="severity">Severity</Label>
-                <Select name="severity" defaultValue="low">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select severity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Input id="location" name="location" required />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-4">
-              <Button variant="outline" onClick={() => setIsAlertDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Create Alert</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+     
     </div>
   );
 };

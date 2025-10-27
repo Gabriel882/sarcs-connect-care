@@ -152,29 +152,32 @@ const Auth = () => {
             <CardDescription>Sign in or create an account to continue</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin" className="hover:bg-primary hover:text-white transition-colors duration-200">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="hover:bg-primary hover:text-white transition-colors duration-200">Sign Up</TabsTrigger>
-              </TabsList>
 
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input id="signin-email" name="email" type="email" placeholder="your.email@example.com" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input id="signin-password" name="password" type="password" placeholder="••••••••" required />
-                  </div>
-                  <Button type="submit" className="w-full bg-primary text-white hover:bg-primary-dark" disabled={isLoading}>
-                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...</> : 'Sign In'}
-                  </Button>
-                </form>
-              </TabsContent>
 
-              <TabsContent value="signup">
+
+<Tabs defaultValue="signup">
+  <TabsList className="grid w-full grid-cols-2">
+    <TabsTrigger value="signin" className="hover:bg-primary hover:text-white transition-colors duration-200">
+      Sign In
+    </TabsTrigger>
+    <TabsTrigger value="signup" className="hover:bg-primary hover:text-white transition-colors duration-200">
+      Sign Up
+    </TabsTrigger>
+  </TabsList>
+
+  
+
+
+
+
+
+
+           
+             
+
+
+
+                 <TabsContent value="signup" id="signup-section" >
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
@@ -192,24 +195,63 @@ const Auth = () => {
                     <Label htmlFor="signup-password">Password</Label>
                     <Input id="signup-password" name="password" type="password" placeholder="••••••••" required minLength={6} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>I want to</Label>
-                    <RadioGroup name="role" defaultValue="volunteer">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="volunteer" id="volunteer" />
-                        <Label htmlFor="volunteer" className="font-normal cursor-pointer">Volunteer my time</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="donor" id="donor" />
-                        <Label htmlFor="donor" className="font-normal cursor-pointer">Make donations</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                <div className="space-y-4">
+  <Label className="text-lg font-semibold text-foreground">I want to</Label>
+  <RadioGroup name="role" defaultValue="volunteer">
+    <div className="flex flex-col space-y-4">
+      <div className="flex items-center space-x-3 hover:bg-gray-100 p-2 rounded-md transition-colors duration-300">
+        <RadioGroupItem
+          value="volunteer"
+          id="volunteer"
+          className="h-5 w-5 border-2 border-gray-300 rounded-full checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary transition-all duration-300"
+        />
+        <Label
+          htmlFor="volunteer"
+          className="font-medium text-gray-700 cursor-pointer hover:text-primary transition-colors duration-300"
+        >
+          Volunteer my time
+        </Label>
+      </div>
+      <div className="flex items-center space-x-3 hover:bg-gray-100 p-2 rounded-md transition-colors duration-300">
+        <RadioGroupItem
+          value="donor"
+          id="donor"
+          className="h-5 w-5 border-2 border-gray-300 rounded-full checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary transition-all duration-300"
+        />
+        <Label
+          htmlFor="donor"
+          className="font-medium text-gray-700 cursor-pointer hover:text-primary transition-colors duration-300"
+        >
+          Make donations
+        </Label>
+      </div>
+    </div>
+  </RadioGroup>
+</div>
+
                   <Button type="submit" className="w-full bg-primary text-white hover:bg-primary-dark" disabled={isLoading}>
                     {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...</> : 'Create Account'}
                   </Button>
                 </form>
+              </TabsContent>              
+
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input id="signin-email" name="email" type="email" placeholder="your.email@example.com" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input id="signin-password" name="password" type="password" placeholder="••••••••" required />
+                  </div>
+                  <Button type="submit" className="w-full bg-primary text-white hover:bg-primary-dark" disabled={isLoading}>
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...</> : 'Sign In'}
+                  </Button>
+                </form>
               </TabsContent>
+
+            
             </Tabs>
           </CardContent>
         </Card>
