@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Heart, LogOut } from 'lucide-react';  // Import DollarSign from lucide-react
-import { EmergencyAlert } from '@/components/EmergencyAlert';  // Import EmergencyAlert from your components folder
+import { DollarSign, Heart, LogOut } from 'lucide-react';
+import { EmergencyAlert } from '@/components/EmergencyAlert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
@@ -12,11 +12,12 @@ const Index = () => {
   const navigate = useNavigate();
   const [alerts, setAlerts] = useState<any[]>([]);
 
-  // Fetch emergency alerts
+  // Load alerts from Supabase or your backend service
   useEffect(() => {
     const loadAlerts = async () => {
       const { data, error } = await supabase.from('emergency_alerts').select('*');
       if (error) console.error('Error fetching alerts:', error);
+      console.log('Fetched alerts:', data); // Debugging line
       setAlerts(data || []);
     };
     loadAlerts();
@@ -31,9 +32,17 @@ const Index = () => {
     );
   }
 
+  // Hardcoded Pie Chart Data (Removed dynamic calculation)
+  const pieData = [
+    { title: 'Critical', value: 5, color: '#e74c3c' },
+    { title: 'High', value: 3, color: '#f39c12' },
+    { title: 'Medium', value: 8, color: '#f1c40f' },
+    { title: 'Low', value: 12, color: '#2ecc71' },
+  ];
+
   return (
     <div className="min-h-screen bg-secondary">
-      {/* Header */}
+      {/* Header Section */}
       <header className="bg-background border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -46,9 +55,9 @@ const Index = () => {
             </div>
             {user && (
               <div className="flex items-center gap-2">
-                <Button onClick={() => navigate(`/volunteer`)}>Go to Dashboard</Button>
-                <Button onClick={() => navigate(`/admin`)}>Go to Dashboard</Button>
-                <Button onClick={() => navigate(`/donor`)}>Go to Dashboard</Button>
+                <Button onClick={() => navigate(`/admin`)}>Admin Dashboard</Button>
+                <Button onClick={() => navigate(`/volunteer`)}>Volunteer Dashboard</Button>
+                <Button onClick={() => navigate(`/donor`)}>Donor Dashboard</Button>
                 <Button variant="outline" size="icon" onClick={signOut}>
                   <LogOut className="h-4 w-4" />
                 </Button>
@@ -69,11 +78,15 @@ const Index = () => {
               Join thousands of volunteers and donors helping communities in need across South Africa
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Button size="lg" onClick={() => navigate(user ? `/${userRole}` : '/auth')}>
+              <Button size="lg" onClick={() => navigate('/auth')}>
                 <Heart className="mr-2 h-5 w-5" />
                 Get Started
               </Button>
-              <Button size="lg" variant="outline">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate('/active-emergencies')}
+              >
                 <DollarSign className="mr-2 h-5 w-5" />
                 View Active Emergencies
               </Button>
@@ -125,6 +138,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+   
 
       {/* Active Alerts Section */}
       {alerts.length > 0 && (

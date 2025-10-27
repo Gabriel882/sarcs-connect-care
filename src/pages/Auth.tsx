@@ -18,37 +18,35 @@ const Auth = () => {
   const { toast } = useToast();
 
   // Fetch user role from Supabase
-const getUserRole = async (userId: string): Promise<UserRole | null> => {
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId)
-    .single();
+  const getUserRole = async (userId: string): Promise<UserRole | null> => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
 
-  if (error) {
-    console.error('Error fetching user role:', error);
-    return null;
-  }
+    if (error) {
+      console.error('Error fetching user role:', error);
+      return null;
+    }
 
-  return data?.role as UserRole;
-};
-
+    return data?.role as UserRole;
+  };
 
   // Redirect already logged-in users
-useEffect(() => {
-  const checkSession = async () => {
-    const { data } = await supabase.auth.getSession();
-    const user = data.session?.user;
-    if (user) {
-      const role = await getUserRole(user.id);
-      if (role === 'admin') navigate('/admin', { replace: true });
-      else if (role === 'volunteer') navigate('/volunteer', { replace: true });
-      else if (role === 'donor') navigate('/donor', { replace: true });
-    }
-  };
-  checkSession();
-}, [navigate]);
-
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (user) {
+        const role = await getUserRole(user.id);
+        if (role === 'admin') navigate('/admin', { replace: true });
+        else if (role === 'volunteer') navigate('/volunteer', { replace: true });
+        else if (role === 'donor') navigate('/donor', { replace: true });
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -125,30 +123,26 @@ useEffect(() => {
       return;
     }
 
-   if (sessionData.user) {
-  const role = await getUserRole(sessionData.user.id);
-  console.log('User role:', role); // Debugging
-  toast({ title: 'Welcome back!', description: 'You have successfully signed in.' });
+    if (sessionData.user) {
+      const role = await getUserRole(sessionData.user.id);
+      toast({ title: 'Welcome back!', description: 'You have successfully signed in.' });
 
-  // Redirect based on role
-  if (role === 'admin') navigate('/admin');
-  else if (role === 'volunteer') navigate('/volunteer');
-  else if (role === 'donor') navigate('/donor');
-  else navigate('/');
-
+      // Redirect based on role
+      if (role === 'admin') navigate('/admin');
+      else if (role === 'volunteer') navigate('/volunteer');
+      else if (role === 'donor') navigate('/donor');
+      else navigate('/');
     }
 
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Heart className="h-12 w-12 text-primary fill-primary" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">SARCS Portal</h1>
+    <div className="min-h-screen bg-gradient-to-r from-purple-600 via-pink-500 to-red-500 flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-6">
+          <Heart className="h-16 w-16 text-primary mx-auto mb-4" />
+          <h1 className="text-4xl font-bold text-foreground">SARCS Portal</h1>
           <p className="text-muted-foreground mt-2">South African Red Cross Society</p>
         </div>
 
@@ -160,8 +154,8 @@ useEffect(() => {
           <CardContent>
             <Tabs defaultValue="signin">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin" className="hover:bg-primary hover:text-white transition-colors duration-200">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="hover:bg-primary hover:text-white transition-colors duration-200">Sign Up</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
@@ -174,7 +168,7 @@ useEffect(() => {
                     <Label htmlFor="signin-password">Password</Label>
                     <Input id="signin-password" name="password" type="password" placeholder="••••••••" required />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full bg-primary text-white hover:bg-primary-dark" disabled={isLoading}>
                     {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...</> : 'Sign In'}
                   </Button>
                 </form>
@@ -211,7 +205,7 @@ useEffect(() => {
                       </div>
                     </RadioGroup>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full bg-primary text-white hover:bg-primary-dark" disabled={isLoading}>
                     {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...</> : 'Create Account'}
                   </Button>
                 </form>

@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import VolunteerDashboard from "./pages/VolunteerDashboard";
 import DonorDashboard from "./pages/DonorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import ActiveEmergencies from './pages/ActiveEmergencies';
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,7 @@ const App = () => (
             <Route path="/volunteer" element={<VolunteerDashboard />} />
             <Route path="/donor" element={<DonorDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
+               <Route path="/active-emergencies" element={<ActiveEmergencies />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

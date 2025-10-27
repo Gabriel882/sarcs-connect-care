@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Heart, LogOut, Plus, Home, Users, Bell, DollarSign, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
+import { Heart, LogOut, Home, Users, Bell, DollarSign, Calendar, AlertCircle, Plus } from 'lucide-react'; // Fixed import for Plus icon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -204,7 +204,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-secondary">
-      {/* Dashboard Content */}
+           {/* Dashboard Content */}
       <header className="bg-background border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -309,8 +309,58 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Emergency Alert Creation Dialog */}
+      <Dialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="icon" onClick={() => setIsAlertDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Emergency Alert</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateAlert}>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" name="title" required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea id="description" name="description" required />
+              </div>
+              <div>
+                <Label htmlFor="severity">Severity</Label>
+                <Select name="severity" defaultValue="low">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select severity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="location">Location</Label>
+                <Input id="location" name="location" required />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-4">
+              <Button variant="outline" onClick={() => setIsAlertDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Create Alert</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default AdminDashboard;
+

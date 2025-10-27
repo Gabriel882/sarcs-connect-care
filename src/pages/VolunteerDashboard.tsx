@@ -48,7 +48,7 @@ const VolunteerDashboard = () => {
     const { data: signups, error } = await supabase
       .from('shift_signups')
       .select('*, volunteer_shifts(*)')
-      .eq('volunteer_id', 'mock-user-id'); // Bypass auth by using a mock user ID
+; // Bypass auth by using a mock user ID
 
     if (error) {
       toast({
