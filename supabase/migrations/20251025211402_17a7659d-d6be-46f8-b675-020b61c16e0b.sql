@@ -5,6 +5,7 @@ CREATE TYPE IF NOT EXISTS public.app_role AS ENUM ('admin', 'volunteer', 'donor'
 CREATE TYPE IF NOT EXISTS public.alert_severity AS ENUM ('critical', 'high', 'medium', 'low');
 CREATE TYPE IF NOT EXISTS public.shift_status AS ENUM ('open', 'full', 'cancelled', 'completed');
 CREATE TYPE IF NOT EXISTS public.shift_signup_status AS ENUM ('confirmed', 'cancelled');
+CREATE TYPE IF NOT EXISTS public.donation_type AS ENUM ('one-time', 'recurring', 'in-kind');
 
 -- =============================================
 -- TABLES
@@ -70,6 +71,7 @@ CREATE TABLE IF NOT EXISTS public.donations (
   amount DECIMAL(10, 2) NOT NULL,
   currency TEXT NOT NULL DEFAULT 'ZAR',
   description TEXT,
+  type donation_type NOT NULL DEFAULT 'one-time',  -- NEW: donation type
   payment_method TEXT,
   payment_reference TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()

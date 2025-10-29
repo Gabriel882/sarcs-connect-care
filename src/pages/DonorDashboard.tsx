@@ -18,15 +18,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// ✅ Local donation type
+// ✅ Donation types
+export type DonationType = "one-time" | "recurring" | "in-kind" | "campaign";
+
+// ✅ Updated donation type
 export type Donation = {
   id: string;
   amount: number;
+  type: DonationType;
   description?: string | null;
   payment_method?: string | null;
   payment_reference?: string | null;
   created_at: string;
   currency: string;
+  campaign_name?: string | null;
 };
 
 const DonorDashboard = () => {
@@ -39,30 +44,37 @@ const DonorDashboard = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // ✅ Fetch donations for this donor
-  useEffect(() => {
-    const fetchDonations = async () => {
-      if (!user) return;
+ useEffect(() => {
+  const fetchDonations = async () => {
+    if (!user) return;
 
-      const { data, error } = await supabase
-        .from("donations")
-        .select("*")
-        .eq("donor_id", user.id)
-        .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("donations")
+      .select("*")
+      .eq("donor_id", user.id)
+      .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching donations:", error.message);
-        toast({
-          title: "Error loading donations",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        setDonations(data as Donation[]);
-      }
-    };
+    if (error) {
+      console.error("Error fetching donations:", error.message);
+      toast({
+        title: "Error loading donations",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      // Map data to ensure every donation has a type
+      const donationsWithType: Donation[] = (data || []).map((d) => ({
+        type: "one-time", // default type
+        ...d,
+      }));
 
-    fetchDonations();
-  }, [user, toast]);
+      setDonations(donationsWithType);
+    }
+  };
+
+  fetchDonations();
+}, [user, toast]);
+
 
   // ✅ Calculate total donations
   useEffect(() => {
@@ -79,15 +91,19 @@ const DonorDashboard = () => {
     const amount = parseFloat(formData.get("amount") as string);
     const description = formData.get("description") as string;
     const payment_method = formData.get("paymentMethod") as string;
+    const type = formData.get("donationType") as DonationType;
+    const campaign_name = type === "campaign" ? (formData.get("campaignName") as string) : null;
 
     const { error } = await supabase.from("donations").insert([
       {
         donor_id: user.id,
         amount,
+        type,
         description,
         payment_method,
         currency: "ZAR",
         payment_reference: `REF-${Date.now()}`,
+        campaign_name,
       },
     ]);
 
@@ -106,13 +122,20 @@ const DonorDashboard = () => {
     });
 
     // Refresh donations
-    const { data: updatedData } = await supabase
-      .from("donations")
-      .select("*")
-      .eq("donor_id", user.id)
-      .order("created_at", { ascending: false });
+  // Refresh donations after insert
+const { data: updatedData } = await supabase
+  .from("donations")
+  .select("*")
+  .eq("donor_id", user.id)
+  .order("created_at", { ascending: false });
 
-    setDonations(updatedData as Donation[]);
+const donationsWithType = (updatedData || []).map(d => ({
+  type: "one-time" as DonationType,
+  ...d,
+}));
+
+setDonations(donationsWithType as Donation[]);
+
     setIsDialogOpen(false);
   };
 
@@ -198,16 +221,40 @@ const DonorDashboard = () => {
                           required
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="description">
-                          Description (Optional)
-                        </Label>
+                        <Label htmlFor="donationType">Donation Type</Label>
+                        <select
+                          id="donationType"
+                          name="donationType"
+                          className="w-full border rounded px-3 py-2"
+                          required
+                        >
+                          <option value="one-time">One-time</option>
+                          <option value="recurring">Recurring</option>
+                          <option value="in-kind">In-kind</option>
+                          <option value="campaign">Campaign</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="campaignName">Campaign Name (Optional)</Label>
+                        <Input
+                          id="campaignName"
+                          name="campaignName"
+                          placeholder="Only for campaign donations"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description (Optional)</Label>
                         <Textarea
                           id="description"
                           name="description"
                           placeholder="What is this donation for?"
                         />
                       </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="paymentMethod">Payment Method</Label>
                         <Input
@@ -216,6 +263,7 @@ const DonorDashboard = () => {
                           placeholder="e.g., Credit Card, Bank Transfer"
                         />
                       </div>
+
                       <Button type="submit" className="w-full">
                         Submit Donation
                       </Button>
