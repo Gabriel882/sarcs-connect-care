@@ -3,12 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ShiftCard, Shift } from "@/components/ShiftCard";
-import { Heart, LogOut, Home, Calendar, DollarSign, CheckCircle } from "lucide-react";
+import { Heart, LogOut, Home, Calendar, CheckCircle, Award, Bell } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { StatsCard } from "@/components/admin/StatsCard";
+
+type Notification = {
+  id: string;
+  title: string;
+  message: string;
+  severity: "low" | "medium" | "high" | "critical";
+  read: boolean;
+  created_at: string;
+};
 
 const VolunteerDashboard = () => {
   const navigate = useNavigate();
@@ -19,17 +28,48 @@ const VolunteerDashboard = () => {
   const [myShifts, setMyShifts] = useState<Shift[]>([]);
   const [signupIds, setSignupIds] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Hardcoded stats
   const [stats, setStats] = useState({
     totalShifts: 0,
     completedShifts: 0,
-    totalDonations: 0,
+    badgesEarned: 0,
+    notifications: 3,
   });
+
+  // Hardcoded notifications
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: "1",
+      title: "Welcome!",
+      message: "Thanks for joining our volunteer program.",
+      severity: "low",
+      read: false,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: "2",
+      title: "New Shift Available",
+      message: "A new shift has been added in your area.",
+      severity: "medium",
+      read: false,
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: "3",
+      title: "Congratulations!",
+      message: "You completed 5 shifts! Keep it up!",
+      severity: "high",
+      read: false,
+      created_at: new Date().toISOString(),
+    },
+  ]);
 
   /** -----------------------------
    * 🔄 Data Loaders
    * ----------------------------- */
   const loadAllData = async () => {
-    await Promise.all([loadAvailableShifts(), loadMyShifts(), loadDonations()]);
+    await Promise.all([loadAvailableShifts(), loadMyShifts()]);
   };
 
   const loadAvailableShifts = async () => {
@@ -57,59 +97,50 @@ const VolunteerDashboard = () => {
   };
 
   const loadMyShifts = async () => {
-    if (!user) return;
+  if (!user) return;
 
-    const { data: signups, error } = await supabase
-      .from("shift_signups")
-      .select("shift_id, volunteer_shifts(*)")
-      .eq("volunteer_id", user.id);
+  const { data: signups, error } = await supabase
+    .from("shift_signups")
+    .select("shift_id, volunteer_shifts(*)")
+    .eq("volunteer_id", user.id);
 
-    if (error) {
-      toast({
-        title: "Error loading your shifts",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
+  if (error) {
+    toast({
+      title: "Error loading your shifts",
+      description: error.message,
+      variant: "destructive",
+    });
+    return;
+  }
 
-    if (signups) {
-      const formatted = signups.map((s) => ({
-        ...s.volunteer_shifts,
-        status:
-          (s.volunteer_shifts.status as "open" | "completed" | "assigned") || "open",
-      }));
+  if (signups) {
+    const formatted = signups.map((s) => ({
+      ...s.volunteer_shifts,
+      status:
+        (s.volunteer_shifts.status as "open" | "completed" | "assigned") || "open",
+    }));
 
-      const completedCount = formatted.filter(
-        (s) => s.status === "completed"
-      ).length;
+    const completedCount = formatted.filter((s) => s.status === "completed").length;
 
-      setMyShifts(formatted);
-      setSignupIds(new Set(signups.map((s) => s.shift_id)));
-      setStats((prev) => ({ ...prev, completedShifts: completedCount }));
-    }
-  };
-
-  const loadDonations = async () => {
-    const { data, error } = await supabase.from("donations").select("amount");
-    if (error) return;
-
-    const totalDonations =
-      data?.reduce((sum, d) => sum + (d.amount || 0), 0) || 0;
-    setStats((prev) => ({ ...prev, totalDonations }));
-  };
+    setMyShifts(formatted);
+    setSignupIds(new Set(signups.map((s) => s.shift_id)));
+    setStats((prev) => ({
+      ...prev,
+      completedShifts: completedCount,
+      badgesEarned: Math.floor(completedCount / 2), // <-- compute badges
+    }));
+  }
+};
 
   /** -----------------------------
    * ✋ Shift Actions
    * ----------------------------- */
 
-  // ✅ Sign up with safety check
   const handleSignUp = async (shiftId: string) => {
     if (!user || isProcessing) return;
     setIsProcessing(true);
 
     try {
-      // Check if already signed up
       const { data: existing } = await supabase
         .from("shift_signups")
         .select("id")
@@ -150,7 +181,6 @@ const VolunteerDashboard = () => {
     }
   };
 
-  // ✅ Cancel signup
   const handleCancel = async (shiftId: string) => {
     if (!user || isProcessing) return;
     setIsProcessing(true);
@@ -181,7 +211,6 @@ const VolunteerDashboard = () => {
     }
   };
 
-  // ✅ Mark as complete (atomic update)
   const handleCompleteShift = async (shiftId: string) => {
     if (isProcessing) return;
     setIsProcessing(true);
@@ -194,17 +223,18 @@ const VolunteerDashboard = () => {
 
       if (error) throw error;
 
-      // Instant local update
       setMyShifts((prev) =>
         prev.map((shift) =>
           shift.id === shiftId ? { ...shift, status: "completed" } : shift
         )
       );
 
-      setStats((prev) => ({
-        ...prev,
-        completedShifts: prev.completedShifts + 1,
-      }));
+     setStats((prev) => ({
+  ...prev,
+  completedShifts: prev.completedShifts + 1,
+  badgesEarned: Math.floor((prev.completedShifts + 1) / 2),
+}));
+
 
       toast({
         title: "Shift Completed!",
@@ -228,7 +258,6 @@ const VolunteerDashboard = () => {
     loadAllData();
   }, []);
 
-  // ✅ Sort shifts so completed are last
   const sortedMyShifts = [...myShifts].sort((a, b) => {
     if (a.status === "completed" && b.status !== "completed") return 1;
     if (a.status !== "completed" && b.status === "completed") return -1;
@@ -263,7 +292,6 @@ const VolunteerDashboard = () => {
         </div>
       </header>
 
-      {/* Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
@@ -274,9 +302,14 @@ const VolunteerDashboard = () => {
             icon={CheckCircle}
           />
           <StatsCard
-            title="Total Donations"
-            value={`ZAR ${stats.totalDonations.toFixed(2)}`}
-            icon={DollarSign}
+            title="Badges Earned"
+            value={stats.badgesEarned}
+            icon={Award}
+          />
+          <StatsCard
+            title="Notifications"
+            value={stats.notifications}
+            icon={Bell}
           />
         </div>
 
@@ -285,9 +318,9 @@ const VolunteerDashboard = () => {
           <TabsList>
             <TabsTrigger value="available">Available Shifts</TabsTrigger>
             <TabsTrigger value="my-shifts">My Shifts</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
 
-          {/* Available Shifts */}
           <TabsContent value="available" className="mt-6">
             <div className="flex justify-between mb-6">
               <Input
@@ -296,7 +329,6 @@ const VolunteerDashboard = () => {
                 onChange={(e) => {}}
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {availableShifts.length > 0 ? (
                 availableShifts.map((shift) => (
@@ -316,7 +348,6 @@ const VolunteerDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* My Shifts */}
           <TabsContent value="my-shifts" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedMyShifts.length > 0 ? (
@@ -332,6 +363,29 @@ const VolunteerDashboard = () => {
               ) : (
                 <p className="col-span-full text-center text-muted-foreground py-12">
                   You haven’t signed up for any shifts yet.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-6">
+            <div className="space-y-4">
+              {notifications.length > 0 ? (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="p-4 border rounded-md bg-background shadow-sm"
+                  >
+                    <h3 className="font-semibold">{n.title}</h3>
+                    <p className="text-sm text-muted-foreground">{n.message}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">
+                      Severity: {n.severity} | Read: {n.read ? "Yes" : "No"}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-12">
+                  No notifications.
                 </p>
               )}
             </div>

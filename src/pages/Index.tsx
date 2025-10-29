@@ -231,6 +231,55 @@ const Index = () => {
         </div>
       </section>
 
+
+
+
+{/* About Us Section */}
+<section className="py-16 bg-gradient-to-br from-primary/10 via-background to-accent/10">
+  <div className="container mx-auto px-4 text-center max-w-6xl">
+    <h2 className="text-4xl md:text-5xl font-bold mb-8 text-foreground">
+      About SARCS Disaster Response Portal
+    </h2>
+    <p className="text-lg md:text-xl text-muted-foreground mb-12">
+      We connect volunteers, donors, and communities to make disaster response faster, smarter, and more impactful. 
+      Every click, signup, and donation helps the South African Red Cross Society save lives and rebuild communities.
+    </p>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-transform transform hover:scale-105">
+        <Heart className="h-10 w-10 text-red-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Support Volunteers</h3>
+        <p className="text-muted-foreground">
+          Recruit and empower volunteers, ensuring help reaches communities in need swiftly.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-transform transform hover:scale-105">
+        <DollarSign className="h-10 w-10 text-green-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Streamline Donations</h3>
+        <p className="text-muted-foreground">
+          Facilitate transparent and efficient donation tracking to maximize impact where it matters most.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-2xl transition-transform transform hover:scale-105">
+        <Users className="h-10 w-10 text-blue-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold mb-2">Coordinate Emergencies</h3>
+        <p className="text-muted-foreground">
+          Monitor active emergencies in real-time, alerting responders and communities instantly.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+
+
       {/* FAQ Section */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
@@ -292,6 +341,58 @@ const Index = () => {
           ))}
         </div>
       </section>
+
+{/* Footer */}
+<footer className="bg-background border-t py-8 mt-12">
+  <div className="container mx-auto px-4 grid md:grid-cols-3 gap-6 text-sm text-muted-foreground">
+    
+    {/* About */}
+    <div>
+      <h4 className="font-bold mb-2 text-foreground">About SARCS Portal</h4>
+      <p>
+        The SARCS Disaster Response Portal connects volunteers and donors
+        to communities in need across South Africa. By coordinating responses
+        efficiently, we help the South African Red Cross Society save lives
+        and provide aid during emergencies.
+      </p>
+    </div>
+    
+    {/* Quick Links */}
+    <div>
+      <h4 className="font-bold mb-2 text-foreground">Quick Links</h4>
+      <ul className="space-y-1">
+        <li><a href="/" className="hover:text-primary">Home</a></li>
+        <li><a href="/volunteer" className="hover:text-primary">Volunteer Dashboard</a></li>
+        <li><a href="/donor" className="hover:text-primary">Donor Dashboard</a></li>
+        <li><a href="/active-emergencies" className="hover:text-primary">Active Emergencies</a></li>
+      </ul>
+    </div>
+
+    {/* Contact / Socials */}
+    <div>
+      <h4 className="font-bold mb-2 text-foreground">Contact</h4>
+      <p>Email: info@sarcs.org.za</p>
+      <p>Phone: +27 11 123 4567</p>
+      <div className="flex space-x-3 mt-2">
+        <a href="#" className="hover:text-primary">Facebook</a>
+        <a href="#" className="hover:text-primary">Twitter</a>
+        <a href="#" className="hover:text-primary">Instagram</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div className="mt-8 text-center text-xs text-muted-foreground">
+    &copy; {new Date().getFullYear()} SARCS Disaster Response Portal. All rights reserved.
+  </div>
+</footer>
+
+
+
+
+
+
+
     </div>
   );
 };
