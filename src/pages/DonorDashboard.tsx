@@ -18,19 +18,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// ✅ Donation types
+// Donation types
 export type DonationType = "one-time" | "recurring" | "in-kind" | "campaign";
 
-// ✅ Updated donation type
 export type Donation = {
   id: string;
-  amount: number;
   type: DonationType;
+  amount: number | null;
   description?: string | null;
   payment_method?: string | null;
   payment_reference?: string | null;
   created_at: string;
-  currency: string;
+  currency?: string | null;
   campaign_name?: string | null;
 };
 
@@ -42,70 +41,73 @@ const DonorDashboard = () => {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [totalDonated, setTotalDonated] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<DonationType>("one-time");
 
-  // ✅ Fetch donations for this donor
- useEffect(() => {
-  const fetchDonations = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("donations")
-      .select("*")
-      .eq("donor_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching donations:", error.message);
-      toast({
-        title: "Error loading donations",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      // Map data to ensure every donation has a type
-      const donationsWithType: Donation[] = (data || []).map((d) => ({
-        type: "one-time", // default type
-        ...d,
-      }));
-
-      setDonations(donationsWithType);
-    }
-  };
-
-  fetchDonations();
-}, [user, toast]);
-
-
-  // ✅ Calculate total donations
   useEffect(() => {
-    const total = donations.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+    const fetchDonations = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("donations")
+        .select("*")
+        .eq("donor_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching donations:", error.message);
+        toast({
+          title: "Error loading donations",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else if (data) {
+        // Map Supabase data to ensure 'type' exists
+        const mappedDonations: Donation[] = data.map((d: any) => ({
+          id: d.id,
+          type: d.type || "one-time",
+          amount: d.amount,
+          description: d.description,
+          payment_method: d.payment_method,
+          payment_reference: d.payment_reference,
+          created_at: d.created_at,
+          currency: d.currency,
+          campaign_name: d.campaign_name,
+        }));
+        setDonations(mappedDonations);
+      }
+    };
+
+    fetchDonations();
+  }, [user, toast]);
+
+  useEffect(() => {
+    const total = donations.reduce((sum, d) => sum + (d.amount ?? 0), 0);
     setTotalDonated(total);
   }, [donations]);
 
-  // ✅ Handle new donation form submission
   const handleDonation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return;
 
     const formData = new FormData(e.currentTarget);
-    const amount = parseFloat(formData.get("amount") as string);
-    const description = formData.get("description") as string;
-    const payment_method = formData.get("paymentMethod") as string;
     const type = formData.get("donationType") as DonationType;
-    const campaign_name = type === "campaign" ? (formData.get("campaignName") as string) : null;
+    const description = formData.get("description") as string | null;
+    const payment_method = formData.get("paymentMethod") as string | null;
+    const campaign_name =
+      type === "campaign" ? (formData.get("campaignName") as string) : null;
 
-    const { error } = await supabase.from("donations").insert([
-      {
-        donor_id: user.id,
-        amount,
-        type,
-        description,
-        payment_method,
-        currency: "ZAR",
-        payment_reference: `REF-${Date.now()}`,
-        campaign_name,
-      },
-    ]);
+    const donationData: any = {
+      donor_id: user.id,
+      type,
+      description,
+      payment_method,
+      currency: "ZAR",
+      payment_reference: `REF-${Date.now()}`,
+      campaign_name,
+      amount: type === "in-kind" ? null : parseFloat(formData.get("amount") as string),
+    };
+
+    const { error } = await supabase.from("donations").insert([donationData]);
 
     if (error) {
       toast({
@@ -121,20 +123,27 @@ const DonorDashboard = () => {
       description: "Your donation has been recorded.",
     });
 
-    // Refresh donations
-  // Refresh donations after insert
-const { data: updatedData } = await supabase
-  .from("donations")
-  .select("*")
-  .eq("donor_id", user.id)
-  .order("created_at", { ascending: false });
+    // Refresh donations after insert
+    const { data: updatedData } = await supabase
+      .from("donations")
+      .select("*")
+      .eq("donor_id", user.id)
+      .order("created_at", { ascending: false });
 
-const donationsWithType = (updatedData || []).map(d => ({
-  type: "one-time" as DonationType,
-  ...d,
-}));
-
-setDonations(donationsWithType as Donation[]);
+    if (updatedData) {
+      const mappedDonations: Donation[] = updatedData.map((d: any) => ({
+        id: d.id,
+        type: d.type || "one-time",
+        amount: d.amount,
+        description: d.description,
+        payment_method: d.payment_method,
+        payment_reference: d.payment_reference,
+        created_at: d.created_at,
+        currency: d.currency,
+        campaign_name: d.campaign_name,
+      }));
+      setDonations(mappedDonations);
+    }
 
     setIsDialogOpen(false);
   };
@@ -149,7 +158,6 @@ setDonations(donationsWithType as Donation[]);
 
   return (
     <div className="min-h-screen bg-secondary">
-      {/* Header */}
       <header className="bg-background border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -157,9 +165,7 @@ setDonations(donationsWithType as Donation[]);
               <Heart className="h-8 w-8 text-primary fill-primary" />
               <div>
                 <h1 className="text-2xl font-bold">Donor Dashboard</h1>
-                <p className="text-sm text-muted-foreground">
-                  Track your contributions
-                </p>
+                <p className="text-sm text-muted-foreground">Track your contributions</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -175,9 +181,7 @@ setDonations(donationsWithType as Donation[]);
         </div>
       </header>
 
-      {/* Main */}
       <main className="container mx-auto px-4 py-8">
-        {/* Summary */}
         <div className="mb-8">
           <Card>
             <CardHeader>
@@ -191,12 +195,10 @@ setDonations(donationsWithType as Donation[]);
                     ZAR {totalDonated.toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {donations.length} donation
-                    {donations.length !== 1 ? "s" : ""}
+                    {donations.length} donation{donations.length !== 1 ? "s" : ""}
                   </p>
                 </div>
 
-                {/* Add Donation Dialog */}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button size="lg">
@@ -208,20 +210,8 @@ setDonations(donationsWithType as Donation[]);
                     <DialogHeader>
                       <DialogTitle>Make a Donation</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleDonation} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="amount">Amount (ZAR)</Label>
-                        <Input
-                          id="amount"
-                          name="amount"
-                          type="number"
-                          step="0.01"
-                          min="1"
-                          placeholder="100.00"
-                          required
-                        />
-                      </div>
 
+                    <form onSubmit={handleDonation} className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="donationType">Donation Type</Label>
                         <select
@@ -229,6 +219,9 @@ setDonations(donationsWithType as Donation[]);
                           name="donationType"
                           className="w-full border rounded px-3 py-2"
                           required
+                          onChange={(e) =>
+                            setSelectedType(e.target.value as DonationType)
+                          }
                         >
                           <option value="one-time">One-time</option>
                           <option value="recurring">Recurring</option>
@@ -236,6 +229,21 @@ setDonations(donationsWithType as Donation[]);
                           <option value="campaign">Campaign</option>
                         </select>
                       </div>
+
+                      {selectedType !== "in-kind" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="amount">Amount (ZAR)</Label>
+                          <Input
+                            id="amount"
+                            name="amount"
+                            type="number"
+                            step="0.01"
+                            min="1"
+                            placeholder="100.00"
+                            required
+                          />
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <Label htmlFor="campaignName">Campaign Name (Optional)</Label>
@@ -255,14 +263,16 @@ setDonations(donationsWithType as Donation[]);
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="paymentMethod">Payment Method</Label>
-                        <Input
-                          id="paymentMethod"
-                          name="paymentMethod"
-                          placeholder="e.g., Credit Card, Bank Transfer"
-                        />
-                      </div>
+                      {selectedType !== "in-kind" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentMethod">Payment Method</Label>
+                          <Input
+                            id="paymentMethod"
+                            name="paymentMethod"
+                            placeholder="e.g., Credit Card, Bank Transfer"
+                          />
+                        </div>
+                      )}
 
                       <Button type="submit" className="w-full">
                         Submit Donation
@@ -275,7 +285,6 @@ setDonations(donationsWithType as Donation[]);
           </Card>
         </div>
 
-        {/* Donation History */}
         <div>
           <h2 className="text-2xl font-bold mb-4">Donation History</h2>
           <div className="space-y-4">
