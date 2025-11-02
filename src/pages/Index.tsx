@@ -344,50 +344,60 @@ const Index = () => {
             </div>
           ))}
         </div>
-      </section>
-
-{/* Footer */}
+      </section>{/* Footer */}
 <footer className="bg-background border-t py-8 mt-12">
-  <div className="container mx-auto px-4 grid md:grid-cols-3 gap-6 text-sm text-muted-foreground">
-    
-    {/* About */}
-    <div>
-      <h4 className="font-bold mb-2 text-foreground">About SARCS Portal</h4>
-      <p>
-        The SARCS Disaster Response Portal connects volunteers and donors
-        to communities in need across South Africa. By coordinating responses
-        efficiently, we help the South African Red Cross Society save lives
-        and provide aid during emergencies.
-      </p>
-    </div>
-    
-    {/* Quick Links */}
-    <div>
-      <h4 className="font-bold mb-2 text-foreground">Quick Links</h4>
-      <ul className="space-y-1">
-        <li><a href="/" className="hover:text-primary">Home</a></li>
-        <li><a href="/volunteer" className="hover:text-primary">Volunteer Dashboard</a></li>
-        <li><a href="/donor" className="hover:text-primary">Donor Dashboard</a></li>
-        <li><a href="/active-emergencies" className="hover:text-primary">Active Emergencies</a></li>
-      </ul>
-    </div>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm text-muted-foreground">
 
-    {/* Contact / Socials */}
-    <div>
-      <h4 className="font-bold mb-2 text-foreground">Contact</h4>
-      <p>Email: info@sarcs.org.za</p>
-      <p>Phone: +27 11 123 4567</p>
-      <div className="flex space-x-3 mt-2">
-        <a href="#" className="hover:text-primary">Facebook</a>
-        <a href="#" className="hover:text-primary">Twitter</a>
-        <a href="#" className="hover:text-primary">Instagram</a>
+      {/* About */}
+      <div>
+        <h4 className="font-bold mb-2 text-foreground">About SARCS Portal</h4>
+        <p className="text-justify sm:text-left">
+          The SARCS Disaster Response Portal connects volunteers and donors
+          to communities in need across South Africa. By coordinating responses
+          efficiently, we help the South African Red Cross Society save lives
+          and provide aid during emergencies.
+        </p>
       </div>
+
+   {/* Quick Links */}
+<div>
+  <h4 className="font-bold mb-2 text-foreground">Quick Links</h4>
+  <ul className="space-y-1">
+    <li>
+      <a href="https://redcross.org.za/about-us/" className="hover:text-primary transition-colors">About Us</a>
+    </li>
+    <li>
+      <a href="https://redcross.org.za/contact-head-office/" className="hover:text-primary transition-colors">Contact Us</a>
+    </li>
+  </ul>
+</div>
+
+{/* Contact / Socials */}
+<div>
+  <h4 className="font-bold mb-2 text-foreground">Contact Us</h4>
+  <p className="break-words">
+    Phone: <a href="tel:+27100224197" className="hover:text-primary transition-colors">+27 10 022 4197</a>
+  </p>
+  <p className="break-words">
+    Email: <a href="mailto:redcross@redcross.org.za" className="hover:text-primary transition-colors">redcross@redcross.org.za</a>
+  </p>
+  <p className="break-words">
+    Address: 5 Ryder Road, Randburg, Johannesburg
+  </p>
+  <div className="flex flex-wrap gap-3 mt-2">
+    <a href="#" className="hover:text-primary transition-colors">Facebook</a>
+    <a href="#" className="hover:text-primary transition-colors">Twitter</a>
+    <a href="#" className="hover:text-primary transition-colors">Instagram</a>
+  </div>
+</div>
+
+
     </div>
 
-  </div>
-
-  <div className="mt-8 text-center text-xs text-muted-foreground">
-    &copy; {new Date().getFullYear()} SARCS Disaster Response Portal. All rights reserved.
+    <div className="mt-8 text-center text-xs text-muted-foreground">
+      &copy; {new Date().getFullYear()} SARCS Disaster Response Portal. All rights reserved.
+    </div>
   </div>
 </footer>
 

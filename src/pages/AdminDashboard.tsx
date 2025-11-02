@@ -275,24 +275,43 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="alerts" className="space-y-6">
-        <TabsList>
-  <TabsTrigger value="alerts">
-    <Bell className="mr-2 h-4 w-4" />
-    Emergency Alerts
-  </TabsTrigger>
-  <TabsTrigger value="shifts">
-    <Calendar className="mr-2 h-4 w-4" />
-    Volunteer Shifts
-  </TabsTrigger>
-  <TabsTrigger value="users">
-    <Users className="mr-2 h-4 w-4" />
-    User Management
-  </TabsTrigger>
-  <TabsTrigger value="donations">
-    <Gift className="mr-2 h-4 w-4" />
-    Donation Overview
-  </TabsTrigger>
-</TabsList>
+  {/* Responsive Tabs List */}
+  <div className="overflow-x-auto">
+    <TabsList className="flex space-x-2 md:space-x-4 min-w-max md:min-w-0">
+      <TabsTrigger value="alerts" className="flex items-center whitespace-nowrap">
+        <Bell className="mr-2 h-4 w-4" />
+        Emergency Alerts
+      </TabsTrigger>
+      <TabsTrigger value="shifts" className="flex items-center whitespace-nowrap">
+        <Calendar className="mr-2 h-4 w-4" />
+        Volunteer Shifts
+      </TabsTrigger>
+      <TabsTrigger value="users" className="flex items-center whitespace-nowrap">
+        <Users className="mr-2 h-4 w-4" />
+        User Management
+      </TabsTrigger>
+      <TabsTrigger value="donations" className="flex items-center whitespace-nowrap">
+        <Gift className="mr-2 h-4 w-4" />
+        Donation Overview
+      </TabsTrigger>
+    </TabsList>
+  </div>
+
+  {/* Tabs Content */}
+  <TabsContent value="alerts">
+    {/* Your alerts content */}
+  </TabsContent>
+  <TabsContent value="shifts">
+    {/* Your shifts content */}
+  </TabsContent>
+  <TabsContent value="users">
+    {/* Your users content */}
+  </TabsContent>
+  <TabsContent value="donations">
+    {/* Your donations content */}
+  </TabsContent>
+
+
 
 
 {/* ====================================================
@@ -719,10 +738,6 @@ const AdminDashboard = () => {
     </div>
   )}
 </TabsContent>
-
-
-
-
 
 
 
