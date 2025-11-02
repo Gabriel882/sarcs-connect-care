@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Donation types
 export type DonationType = "one-time" | "recurring" | "in-kind" | "campaign";
 
 export type Donation = {
@@ -43,6 +42,65 @@ const DonorDashboard = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<DonationType>("one-time");
 
+  // --- NEW STATES FOR IN-KIND (FOOD & CLOTHING) ---
+ const [foodDonations, setFoodDonations] = useState<FoodDonation[]>([]);
+    const [clothingDonations, setClothingDonations] = useState<ClothingDonation[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMessage, setModalMessage] = useState("");
+
+    // ✅ Load from localStorage on mount
+    useEffect(() => {
+      const storedFood = localStorage.getItem("foodDonations");
+      const storedClothing = localStorage.getItem("clothingDonations");
+      if (storedFood) setFoodDonations(JSON.parse(storedFood));
+      if (storedClothing) setClothingDonations(JSON.parse(storedClothing));
+    }, []);
+
+    // ✅ Save whenever data changes
+    useEffect(() => {
+      localStorage.setItem("foodDonations", JSON.stringify(foodDonations));
+    }, [foodDonations]);
+
+    useEffect(() => {
+      localStorage.setItem("clothingDonations", JSON.stringify(clothingDonations));
+    }, [clothingDonations]);
+
+    // ✅ Helper: open modal
+    const showSuccessModal = (message: string) => {
+      setModalMessage(message);
+      setIsModalOpen(true);
+    };
+
+    // --- New Models for In-Kind Donations ---
+type FoodDonation = {
+  item: string;
+  quantity: string;
+  description?: string;
+  location?: string;
+  date: string;
+};
+
+type ClothingDonation = {
+  type: string;
+  quantity: string;
+  description?: string;
+  location?: string;
+  date: string;
+};
+
+
+    
+  // --- PAYMENT STATES ---
+  const [paymentType, setPaymentType] = useState("");
+  const [paymentData, setPaymentData] = useState({
+    cardName: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
+    walletId: "",
+  });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
   useEffect(() => {
     const fetchDonations = async () => {
       if (!user) return;
@@ -54,26 +112,25 @@ const DonorDashboard = () => {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error fetching donations:", error.message);
         toast({
           title: "Error loading donations",
           description: error.message,
           variant: "destructive",
         });
       } else if (data) {
-        // Map Supabase data to ensure 'type' exists
-        const mappedDonations: Donation[] = data.map((d: any) => ({
-          id: d.id,
-          type: d.type || "one-time",
-          amount: d.amount,
-          description: d.description,
-          payment_method: d.payment_method,
-          payment_reference: d.payment_reference,
-          created_at: d.created_at,
-          currency: d.currency,
-          campaign_name: d.campaign_name,
-        }));
-        setDonations(mappedDonations);
+        setDonations(
+          data.map((d: any) => ({
+            id: d.id,
+            type: d.type || "one-time",
+            amount: d.amount,
+            description: d.description,
+            payment_method: d.payment_method,
+            payment_reference: d.payment_reference,
+            created_at: d.created_at,
+            currency: d.currency,
+            campaign_name: d.campaign_name,
+          }))
+        );
       }
     };
 
@@ -81,18 +138,53 @@ const DonorDashboard = () => {
   }, [user, toast]);
 
   useEffect(() => {
-    const total = donations.reduce((sum, d) => sum + (d.amount ?? 0), 0);
-    setTotalDonated(total);
+    setTotalDonated(donations.reduce((sum, d) => sum + (d.amount ?? 0), 0));
   }, [donations]);
 
+  // --- FORMATTERS ---
+  const formatCardNumber = (value: string) =>
+    value.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+  const formatExpiry = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    return digits.length >= 3 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+  };
+
+  // --- VALIDATION ---
+  const validatePayment = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (paymentType === "card") {
+      if (!paymentData.cardName) newErrors.cardName = "Name is required";
+      if (paymentData.cardNumber.replace(/\s/g, "").length !== 16)
+        newErrors.cardNumber = "Card number must be 16 digits";
+      if (!/^\d{2}\/\d{2}$/.test(paymentData.expiry))
+        newErrors.expiry = "Expiry must be MM/YY";
+      if (!/^\d{3,4}$/.test(paymentData.cvv))
+        newErrors.cvv = "CVV must be 3–4 digits";
+    } else if (paymentType === "ewallet") {
+      if (!paymentData.walletId) newErrors.walletId = "E-Wallet ID required";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // --- SUBMIT DONATION ---
   const handleDonation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return;
 
+    if (selectedType !== "in-kind" && !validatePayment()) {
+      toast({
+        title: "Invalid payment details",
+        description: "Please correct the highlighted fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     const type = formData.get("donationType") as DonationType;
     const description = formData.get("description") as string | null;
-    const payment_method = formData.get("paymentMethod") as string | null;
+    const payment_method = paymentType;
     const campaign_name =
       type === "campaign" ? (formData.get("campaignName") as string) : null;
 
@@ -108,44 +200,37 @@ const DonorDashboard = () => {
     };
 
     const { error } = await supabase.from("donations").insert([donationData]);
-
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
 
-    toast({
-      title: "Thank you!",
-      description: "Your donation has been recorded.",
-    });
+    toast({ title: "Thank you!", description: "Your donation has been recorded." });
 
-    // Refresh donations after insert
     const { data: updatedData } = await supabase
       .from("donations")
       .select("*")
       .eq("donor_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (updatedData) {
-      const mappedDonations: Donation[] = updatedData.map((d: any) => ({
-        id: d.id,
-        type: d.type || "one-time",
-        amount: d.amount,
-        description: d.description,
-        payment_method: d.payment_method,
-        payment_reference: d.payment_reference,
-        created_at: d.created_at,
-        currency: d.currency,
-        campaign_name: d.campaign_name,
-      }));
-      setDonations(mappedDonations);
-    }
+    if (updatedData)
+      setDonations(
+        updatedData.map((d: any) => ({
+          id: d.id,
+          type: d.type || "one-time",
+          amount: d.amount,
+          description: d.description,
+          payment_method: d.payment_method,
+          payment_reference: d.payment_reference,
+          created_at: d.created_at,
+          currency: d.currency,
+          campaign_name: d.campaign_name,
+        }))
+      );
 
     setIsDialogOpen(false);
+    setPaymentType("");
+    setPaymentData({ cardName: "", cardNumber: "", expiry: "", cvv: "", walletId: "" });
   };
 
   if (loading) {
@@ -165,7 +250,9 @@ const DonorDashboard = () => {
               <Heart className="h-8 w-8 text-primary fill-primary" />
               <div>
                 <h1 className="text-2xl font-bold">Donor Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Track your contributions</p>
+                <p className="text-sm text-muted-foreground">
+                  Track your contributions
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -195,7 +282,8 @@ const DonorDashboard = () => {
                     ZAR {totalDonated.toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {donations.length} donation{donations.length !== 1 ? "s" : ""}
+                    {donations.length} donation
+                    {donations.length !== 1 ? "s" : ""}
                   </p>
                 </div>
 
@@ -246,7 +334,9 @@ const DonorDashboard = () => {
                       )}
 
                       <div className="space-y-2">
-                        <Label htmlFor="campaignName">Campaign Name (Optional)</Label>
+                        <Label htmlFor="campaignName">
+                          Campaign Name (Optional)
+                        </Label>
                         <Input
                           id="campaignName"
                           name="campaignName"
@@ -255,7 +345,9 @@ const DonorDashboard = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="description">Description (Optional)</Label>
+                        <Label htmlFor="description">
+                          Description (Optional)
+                        </Label>
                         <Textarea
                           id="description"
                           name="description"
@@ -264,14 +356,132 @@ const DonorDashboard = () => {
                       </div>
 
                       {selectedType !== "in-kind" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="paymentMethod">Payment Method</Label>
-                          <Input
-                            id="paymentMethod"
-                            name="paymentMethod"
-                            placeholder="e.g., Credit Card, Bank Transfer"
-                          />
-                        </div>
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="paymentType">Payment Method</Label>
+                            <select
+                              id="paymentType"
+                              name="paymentType"
+                              className="w-full border rounded px-3 py-2"
+                              value={paymentType}
+                              onChange={(e) => setPaymentType(e.target.value)}
+                              required
+                            >
+                              <option value="">Select Method</option>
+                              <option value="card">Credit/Debit Card</option>
+                              <option value="ewallet">
+                                Send Cash through E-Wallet
+                              </option>
+                            </select>
+                          </div>
+
+                          {paymentType === "card" && (
+                            <div className="space-y-2">
+                              <Label htmlFor="cardName">Cardholder Name</Label>
+                              <Input
+                                id="cardName"
+                                placeholder="John Doe"
+                                value={paymentData.cardName}
+                                onChange={(e) =>
+                                  setPaymentData({
+                                    ...paymentData,
+                                    cardName: e.target.value,
+                                  })
+                                }
+                              />
+                              {errors.cardName && (
+                                <p className="text-red-500 text-sm">
+                                  {errors.cardName}
+                                </p>
+                              )}
+
+                              <Label htmlFor="cardNumber">Card Number</Label>
+                              <Input
+                                id="cardNumber"
+                                placeholder="1234 5678 9012 3456"
+                                value={paymentData.cardNumber}
+                                onChange={(e) =>
+                                  setPaymentData({
+                                    ...paymentData,
+                                    cardNumber: formatCardNumber(e.target.value),
+                                  })
+                                }
+                              />
+                              {errors.cardNumber && (
+                                <p className="text-red-500 text-sm">
+                                  {errors.cardNumber}
+                                </p>
+                              )}
+
+                              <div className="flex space-x-2">
+                                <div className="flex-1">
+                                  <Label htmlFor="expiry">Expiry (MM/YY)</Label>
+                                  <Input
+                                    id="expiry"
+                                    placeholder="MM/YY"
+                                    value={paymentData.expiry}
+                                    onChange={(e) =>
+                                      setPaymentData({
+                                        ...paymentData,
+                                        expiry: formatExpiry(e.target.value),
+                                      })
+                                    }
+                                  />
+                                  {errors.expiry && (
+                                    <p className="text-red-500 text-sm">
+                                      {errors.expiry}
+                                    </p>
+                                  )}
+                                </div>
+
+                                <div className="flex-1">
+                                  <Label htmlFor="cvv">CVV</Label>
+                                  <Input
+                                    id="cvv"
+                                    placeholder="123"
+                                    maxLength={4}
+                                    value={paymentData.cvv}
+                                    onChange={(e) =>
+                                      setPaymentData({
+                                        ...paymentData,
+                                        cvv: e.target.value.replace(/\D/g, ""),
+                                      })
+                                    }
+                                  />
+                                  {errors.cvv && (
+                                    <p className="text-red-500 text-sm">
+                                      {errors.cvv}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {paymentType === "ewallet" && (
+                            <div className="space-y-2">
+                              <Label htmlFor="walletId">
+                                E-Wallet ID or Number
+                              </Label>
+                              <Input
+                                id="walletId"
+                                placeholder="GCash / PayMaya / SnapScan ID"
+                                value={paymentData.walletId}
+                                onChange={(e) =>
+                                  setPaymentData({
+                                    ...paymentData,
+                                    walletId: e.target.value,
+                                  })
+                                }
+                              />
+                              {errors.walletId && (
+                                <p className="text-red-500 text-sm">
+                                  {errors.walletId}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
 
                       <Button type="submit" className="w-full">
@@ -299,6 +509,186 @@ const DonorDashboard = () => {
             )}
           </div>
         </div>
+
+        <br></br>
+<section className="grid md:grid-cols-2 gap-6">
+  {/* ---------------- FOOD DONATION FORM ---------------- */}
+  <Card>
+    <CardHeader>
+      <CardTitle>🍎 Donate Food</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const foodItem = (form.foodItem as HTMLInputElement).value.trim();
+          const quantity = (form.foodQuantity as HTMLInputElement).value.trim();
+          const description = (form.foodDescription as HTMLTextAreaElement).value.trim();
+          const location = (form.foodDropOff as HTMLInputElement).value.trim();
+
+          if (!foodItem || !quantity) return;
+
+          const newDonation: FoodDonation = {
+            item: foodItem,
+            quantity,
+            description,
+            location,
+            date: new Date().toLocaleString(),
+          };
+
+          setFoodDonations((prev) => [newDonation, ...prev]);
+          showSuccessModal(`✅ Food donation submitted!\n\n${foodItem} (${quantity})`);
+          form.reset();
+        }}
+        className="space-y-3"
+      >
+        <div>
+          <Label htmlFor="foodItem">Food Item</Label>
+          <Input id="foodItem" name="foodItem" placeholder="e.g., Rice, Canned Beans" required />
+        </div>
+        <div>
+          <Label htmlFor="foodQuantity">Quantity</Label>
+          <Input id="foodQuantity" name="foodQuantity" placeholder="e.g., 10 kg or 5 packs" required />
+        </div>
+        <div>
+          <Label htmlFor="foodDescription">Description (optional)</Label>
+          <Textarea id="foodDescription" name="foodDescription" placeholder="Any notes or expiry info?" />
+        </div>
+        <div>
+          <Label htmlFor="foodDropOff">Drop-off Location (optional)</Label>
+          <Input id="foodDropOff" name="foodDropOff" placeholder="e.g., Main Center, Cape Town" />
+        </div>
+        <Button type="submit" className="w-full">
+          Submit Food Donation
+        </Button>
+      </form>
+    </CardContent>
+  </Card>
+
+  {/* ---------------- CLOTHING DONATION FORM ---------------- */}
+  <Card>
+    <CardHeader>
+      <CardTitle>👕 Donate Clothing</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const clothingType = (form.clothingType as HTMLInputElement).value.trim();
+          const quantity = (form.clothingQuantity as HTMLInputElement).value.trim();
+          const description = (form.clothingDescription as HTMLTextAreaElement).value.trim();
+          const location = (form.clothingDropOff as HTMLInputElement).value.trim();
+
+          if (!clothingType || !quantity) return;
+
+          const newDonation: ClothingDonation = {
+            type: clothingType,
+            quantity,
+            description,
+            location,
+            date: new Date().toLocaleString(),
+          };
+
+          setClothingDonations((prev) => [newDonation, ...prev]);
+          showSuccessModal(`✅ Clothing donation submitted!\n\n${clothingType} (${quantity})`);
+          form.reset();
+        }}
+        className="space-y-3"
+      >
+        <div>
+          <Label htmlFor="clothingType">Clothing Type</Label>
+          <Input id="clothingType" name="clothingType" placeholder="e.g., Jackets, T-shirts" required />
+        </div>
+        <div>
+          <Label htmlFor="clothingQuantity">Quantity</Label>
+          <Input id="clothingQuantity" name="clothingQuantity" placeholder="e.g., 5 items" required />
+        </div>
+        <div>
+          <Label htmlFor="clothingDescription">Description (optional)</Label>
+          <Textarea id="clothingDescription" name="clothingDescription" placeholder="Sizes, condition, etc." />
+        </div>
+        <div>
+          <Label htmlFor="clothingDropOff">Drop-off Location (optional)</Label>
+          <Input id="clothingDropOff" name="clothingDropOff" placeholder="e.g., Donation Center A" />
+        </div>
+        <Button type="submit" className="w-full">
+          Submit Clothing Donation
+        </Button>
+      </form>
+    </CardContent>
+  </Card>
+</section>
+
+{/* ---------------- HISTORIES ---------------- */}
+<section className="mt-10 grid md:grid-cols-2 gap-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>🍽️ Food Donation History</CardTitle>
+    </CardHeader>
+    <CardContent>
+      {foodDonations.length === 0 ? (
+        <p className="text-muted-foreground text-center py-6">No food donations yet.</p>
+      ) : (
+        <ul className="space-y-3">
+          {foodDonations.map((donation, idx) => (
+            <li key={idx} className="border p-3 rounded-md bg-background shadow-sm">
+              <p className="font-semibold">
+                {donation.item} ({donation.quantity})
+              </p>
+              {donation.description && <p className="text-sm text-muted-foreground">{donation.description}</p>}
+              {donation.location && <p className="text-sm text-muted-foreground">📍 {donation.location}</p>}
+              <p className="text-xs text-muted-foreground mt-1">{donation.date}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>🧺 Clothing Donation History</CardTitle>
+    </CardHeader>
+    <CardContent>
+      {clothingDonations.length === 0 ? (
+        <p className="text-muted-foreground text-center py-6">No clothing donations yet.</p>
+      ) : (
+        <ul className="space-y-3">
+          {clothingDonations.map((donation, idx) => (
+            <li key={idx} className="border p-3 rounded-md bg-background shadow-sm">
+              <p className="font-semibold">
+                {donation.type} ({donation.quantity})
+              </p>
+              {donation.description && <p className="text-sm text-muted-foreground">{donation.description}</p>}
+              {donation.location && <p className="text-sm text-muted-foreground">📍 {donation.location}</p>}
+              <p className="text-xs text-muted-foreground mt-1">{donation.date}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </CardContent>
+  </Card>
+</section>
+
+{/* ✅ Confirmation Modal */}
+<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+  <DialogContent className="sm:max-w-lg w-full text-center">
+    <DialogHeader>
+      <DialogTitle>Donation Successful 🎉</DialogTitle>
+      {modalMessage && <p className="whitespace-pre-line mt-2">{modalMessage}</p>}
+    </DialogHeader>
+    <Button className="mt-4 w-full" onClick={() => setIsModalOpen(false)}>
+      Close
+    </Button>
+  </DialogContent>
+</Dialog>
+
+
+
+
+
       </main>
     </div>
   );
