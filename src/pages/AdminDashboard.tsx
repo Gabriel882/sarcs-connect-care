@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Heart, LogOut, Home, Users, Bell, DollarSign, Calendar, AlertCircle, Plus } from 'lucide-react'; // Fixed import for Plus icon
+import { Heart, LogOut, Home, Users, Bell, DollarSign, Calendar, AlertCircle, Plus, Gift } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -19,10 +19,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 
-
-
-
-
+interface RecentActivityItem {
+  id: string;
+  user_name: string;
+  action: string;
+  timestamp: string;
+  type: 'donation' | 'signup';
+}
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -30,7 +33,9 @@ const AdminDashboard = () => {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
+  const [donations, setDonations] = useState<any[]>([]);
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     volunteers: 0,
@@ -41,27 +46,35 @@ const AdminDashboard = () => {
     upcomingShifts: 0,
     totalShiftSignups: 0,
   });
+
   const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false);
 
   useEffect(() => {
     loadData();
-    setupRealtimeSubscriptions();
+    const unsubscribe = setupRealtimeSubscriptions();
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const setupRealtimeSubscriptions = () => {
     const alertsChannel = supabase
       .channel('admin_alerts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'emergency_alerts' }, () => {
-        loadData();
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'emergency_alerts' },
+        () => loadData()
+      )
       .subscribe();
 
     const shiftsChannel = supabase
       .channel('admin_shifts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'volunteer_shifts' }, () => {
-        loadData();
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'volunteer_shifts' },
+        () => loadData()
+      )
       .subscribe();
 
     return () => {
@@ -70,22 +83,12 @@ const AdminDashboard = () => {
     };
   };
 
-  const loadData = async () => {
-    await Promise.all([loadAlerts(), loadShifts(), loadUsers(), loadStats(), loadRecentActivity()]);
-  };
-
-
-
-
-  
-
   const loadAlerts = async () => {
     const { data } = await supabase
       .from('emergency_alerts')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(10);
-
     if (data) setAlerts(data);
   };
 
@@ -96,33 +99,28 @@ const AdminDashboard = () => {
       .gte('start_time', new Date().toISOString())
       .order('start_time', { ascending: true })
       .limit(10);
-
     if (data) setShifts(data);
   };
 
   const loadUsers = async () => {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
+    const { data: profiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     if (profiles) {
       const usersWithRoles = await Promise.all(
         profiles.map(async (profile) => {
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', profile.id);
-
+          const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', profile.id);
           return {
             ...profile,
             roles: roles?.map((r) => r.role) || [],
           };
         })
       );
-
       setUsers(usersWithRoles);
     }
+  };
+
+  const loadDonations = async () => {
+    const { data } = await supabase.from('donations').select('*');
+    if (data) setDonations(data);
   };
 
   const loadStats = async () => {
@@ -154,19 +152,11 @@ const AdminDashboard = () => {
 
   const loadRecentActivity = async () => {
     const [donationsData, signupsData] = await Promise.all([
-      supabase
-        .from('donations')
-        .select('*, profiles(full_name)')
-        .order('created_at', { ascending: false })
-        .limit(5),
-      supabase
-        .from('shift_signups')
-        .select('*, profiles(full_name)')
-        .order('created_at', { ascending: false })
-        .limit(5),
+      supabase.from('donations').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(5),
+      supabase.from('shift_signups').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(5),
     ]);
 
-    const activities: any[] = [];
+    const activities: RecentActivityItem[] = [];
 
     donationsData.data?.forEach((d: any) => {
       activities.push({
@@ -192,30 +182,30 @@ const AdminDashboard = () => {
     setRecentActivity(activities.slice(0, 10));
   };
 
-  // Handles alert creation
+  const loadData = async () => {
+    await Promise.all([loadAlerts(), loadShifts(), loadUsers(), loadStats(), loadRecentActivity(), loadDonations()]);
+  };
+
   const handleCreateAlert = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    // ✅ Get the logged-in user's ID from Supabase Auth
-const {
-  data: { user },
-} = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: 'Error', description: 'User not authenticated', variant: 'destructive' });
+      return;
+    }
 
-if (!user) {
-  toast({ title: 'Error', description: 'User not authenticated', variant: 'destructive' });
-  return;
-}
 
-// ✅ Use the user's UUID as created_by
-const { error } = await supabase.from('emergency_alerts').insert({
-  title: formData.get('title') as string,
-  description: formData.get('description') as string,
-  severity: formData.get('severity') as any,
-  location: formData.get('location') as string,
-  created_by: user.id,
-});
+    
 
+    const { error } = await supabase.from('emergency_alerts').insert({
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      severity: formData.get('severity') as any,
+      location: formData.get('location') as string,
+      created_by: user.id,
+    });
 
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -285,20 +275,24 @@ const { error } = await supabase.from('emergency_alerts').insert({
         </div>
 
         <Tabs defaultValue="alerts" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="alerts">
-              <Bell className="mr-2 h-4 w-4" />
-              Emergency Alerts
-            </TabsTrigger>
-            <TabsTrigger value="shifts">
-              <Calendar className="mr-2 h-4 w-4" />
-              Volunteer Shifts
-            </TabsTrigger>
-            <TabsTrigger value="users">
-              <Users className="mr-2 h-4 w-4" />
-              User Management
-            </TabsTrigger>
-          </TabsList>
+        <TabsList>
+  <TabsTrigger value="alerts">
+    <Bell className="mr-2 h-4 w-4" />
+    Emergency Alerts
+  </TabsTrigger>
+  <TabsTrigger value="shifts">
+    <Calendar className="mr-2 h-4 w-4" />
+    Volunteer Shifts
+  </TabsTrigger>
+  <TabsTrigger value="users">
+    <Users className="mr-2 h-4 w-4" />
+    User Management
+  </TabsTrigger>
+  <TabsTrigger value="donations">
+    <Gift className="mr-2 h-4 w-4" />
+    Donation Overview
+  </TabsTrigger>
+</TabsList>
 
 
 {/* ====================================================
@@ -686,10 +680,59 @@ const { error } = await supabase.from('emergency_alerts').insert({
               <UserManagementTable users={users} />
             </div>
           </TabsContent>
+
+
+
+
+<TabsContent value="donations">
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-xl font-semibold">Donor Contributions</h2>
+  </div>
+
+  {donations.length === 0 ? (
+    <p className="text-center text-muted-foreground py-12">
+      No donations have been recorded yet.
+    </p>
+  ) : (
+    <div className="space-y-4">
+     {donations.map((donation) => (
+  <Card key={donation.id}>
+    <CardContent className="flex flex-col md:flex-row justify-between items-start md:items-center p-4">
+      <div>
+        <p className="font-semibold">
+          Donor: {donation.profiles?.full_name || 'Anonymous'} donated{' '}
+          
+        </p>
+        {donation.amount && (
+          <p className="text-sm text-muted-foreground">
+            Amount: ZAR {Number(donation.amount).toFixed(2)}
+          </p>
+        )}
+       
+      </div>
+
+      
+    </CardContent>
+  </Card>
+))}
+
+    </div>
+  )}
+</TabsContent>
+
+
+
+
+
+
+
         </Tabs>
+
+
+
       </main>
 
-     
+
     </div>
   );
 };

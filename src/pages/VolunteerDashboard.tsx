@@ -55,14 +55,15 @@ const VolunteerDashboard = () => {
       read: false,
       created_at: new Date().toISOString(),
     },
-    {
-      id: "3",
-      title: "Congratulations!",
-      message: "You completed 5 shifts! Keep it up!",
-      severity: "high",
-      read: false,
-      created_at: new Date().toISOString(),
-    },
+   {
+  id: "3",
+  title: "New Opportunity!",
+  message: "A new volunteer event has been posted, sign up now to make a difference!",
+  severity: "high",
+  read: false,
+  created_at: new Date().toISOString(),
+}
+
   ]);
 
   /** -----------------------------

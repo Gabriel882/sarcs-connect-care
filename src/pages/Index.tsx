@@ -96,18 +96,22 @@ const Index = () => {
           <p className="text-xl text-muted-foreground mb-8">
             Join thousands of volunteers and donors helping communities in need across South Africa.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg" onClick={() => navigate("/auth")}>
-              <Heart className="mr-2 h-5 w-5" /> Get Started
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate("/active-emergencies")}
-            >
-              <DollarSign className="mr-2 h-5 w-5" /> View Active Emergencies
-            </Button>
-          </div>
+     <div className="flex flex-wrap justify-center gap-4">
+  <Button
+    size="lg"
+    onClick={() => navigate(user ? "/dashboard" : "/auth")}
+  >
+    <Heart className="mr-2 h-5 w-5" /> {user ? "View My Dashboard" : "Get Started"}
+  </Button>
+  <Button
+    size="lg"
+    variant="outline"
+    onClick={() => navigate("/active-emergencies")}
+  >
+    <DollarSign className="mr-2 h-5 w-5" /> View Active Emergencies
+  </Button>
+</div>
+
         </div>
       </section>
 

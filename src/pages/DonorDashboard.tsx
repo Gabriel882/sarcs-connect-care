@@ -269,231 +269,197 @@ type ClothingDonation = {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Impact</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Donated</p>
-                  <p className="text-3xl font-bold text-success">
-                    ZAR {totalDonated.toFixed(2)}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {donations.length} donation
-                    {donations.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="lg">
-                      <Plus className="mr-2 h-5 w-5" />
-                      Make a Donation
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Make a Donation</DialogTitle>
-                    </DialogHeader>
-
-                    <form onSubmit={handleDonation} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="donationType">Donation Type</Label>
-                        <select
-                          id="donationType"
-                          name="donationType"
-                          className="w-full border rounded px-3 py-2"
-                          required
-                          onChange={(e) =>
-                            setSelectedType(e.target.value as DonationType)
-                          }
-                        >
-                          <option value="one-time">One-time</option>
-                          <option value="recurring">Recurring</option>
-                          <option value="in-kind">In-kind</option>
-                          <option value="campaign">Campaign</option>
-                        </select>
-                      </div>
-
-                      {selectedType !== "in-kind" && (
-                        <div className="space-y-2">
-                          <Label htmlFor="amount">Amount (ZAR)</Label>
-                          <Input
-                            id="amount"
-                            name="amount"
-                            type="number"
-                            step="0.01"
-                            min="1"
-                            placeholder="100.00"
-                            required
-                          />
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <Label htmlFor="campaignName">
-                          Campaign Name (Optional)
-                        </Label>
-                        <Input
-                          id="campaignName"
-                          name="campaignName"
-                          placeholder="Only for campaign donations"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="description">
-                          Description (Optional)
-                        </Label>
-                        <Textarea
-                          id="description"
-                          name="description"
-                          placeholder="What is this donation for?"
-                        />
-                      </div>
-
-                      {selectedType !== "in-kind" && (
-                        <>
-                          <div className="space-y-2">
-                            <Label htmlFor="paymentType">Payment Method</Label>
-                            <select
-                              id="paymentType"
-                              name="paymentType"
-                              className="w-full border rounded px-3 py-2"
-                              value={paymentType}
-                              onChange={(e) => setPaymentType(e.target.value)}
-                              required
-                            >
-                              <option value="">Select Method</option>
-                              <option value="card">Credit/Debit Card</option>
-                              <option value="ewallet">
-                                Send Cash through E-Wallet
-                              </option>
-                            </select>
-                          </div>
-
-                          {paymentType === "card" && (
-                            <div className="space-y-2">
-                              <Label htmlFor="cardName">Cardholder Name</Label>
-                              <Input
-                                id="cardName"
-                                placeholder="John Doe"
-                                value={paymentData.cardName}
-                                onChange={(e) =>
-                                  setPaymentData({
-                                    ...paymentData,
-                                    cardName: e.target.value,
-                                  })
-                                }
-                              />
-                              {errors.cardName && (
-                                <p className="text-red-500 text-sm">
-                                  {errors.cardName}
-                                </p>
-                              )}
-
-                              <Label htmlFor="cardNumber">Card Number</Label>
-                              <Input
-                                id="cardNumber"
-                                placeholder="1234 5678 9012 3456"
-                                value={paymentData.cardNumber}
-                                onChange={(e) =>
-                                  setPaymentData({
-                                    ...paymentData,
-                                    cardNumber: formatCardNumber(e.target.value),
-                                  })
-                                }
-                              />
-                              {errors.cardNumber && (
-                                <p className="text-red-500 text-sm">
-                                  {errors.cardNumber}
-                                </p>
-                              )}
-
-                              <div className="flex space-x-2">
-                                <div className="flex-1">
-                                  <Label htmlFor="expiry">Expiry (MM/YY)</Label>
-                                  <Input
-                                    id="expiry"
-                                    placeholder="MM/YY"
-                                    value={paymentData.expiry}
-                                    onChange={(e) =>
-                                      setPaymentData({
-                                        ...paymentData,
-                                        expiry: formatExpiry(e.target.value),
-                                      })
-                                    }
-                                  />
-                                  {errors.expiry && (
-                                    <p className="text-red-500 text-sm">
-                                      {errors.expiry}
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div className="flex-1">
-                                  <Label htmlFor="cvv">CVV</Label>
-                                  <Input
-                                    id="cvv"
-                                    placeholder="123"
-                                    maxLength={4}
-                                    value={paymentData.cvv}
-                                    onChange={(e) =>
-                                      setPaymentData({
-                                        ...paymentData,
-                                        cvv: e.target.value.replace(/\D/g, ""),
-                                      })
-                                    }
-                                  />
-                                  {errors.cvv && (
-                                    <p className="text-red-500 text-sm">
-                                      {errors.cvv}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {paymentType === "ewallet" && (
-                            <div className="space-y-2">
-                              <Label htmlFor="walletId">
-                                E-Wallet ID or Number
-                              </Label>
-                              <Input
-                                id="walletId"
-                                placeholder="GCash / PayMaya / SnapScan ID"
-                                value={paymentData.walletId}
-                                onChange={(e) =>
-                                  setPaymentData({
-                                    ...paymentData,
-                                    walletId: e.target.value,
-                                  })
-                                }
-                              />
-                              {errors.walletId && (
-                                <p className="text-red-500 text-sm">
-                                  {errors.walletId}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                      <Button type="submit" className="w-full">
-                        Submit Donation
-                      </Button>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardContent>
-          </Card>
+     <div className="mb-4"> {/* reduced bottom margin */}
+  <Card>
+    <CardHeader className="pb-2">
+      <CardTitle className="text-lg">Your Impact</CardTitle> {/* smaller title */}
+    </CardHeader>
+    <CardContent className="p-4"> {/* reduced padding */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground">Total Donated</p> {/* smaller text */}
+          <p className="text-2xl font-bold text-success">
+            ZAR {totalDonated.toFixed(2)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {donations.length} donation{donations.length !== 1 ? 's' : ''}
+          </p>
         </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="flex items-center gap-1">
+              <Plus className="h-4 w-4" />
+              Make a Donation
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md p-4"> {/* smaller dialog */}
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-lg">Make a Donation</DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleDonation} className="space-y-3 text-sm">
+              <div className="space-y-1">
+                <Label htmlFor="donationType" className="text-xs">Donation Type</Label>
+                <select
+                  id="donationType"
+                  name="donationType"
+                  className="w-full border rounded px-2 py-1 text-sm"
+                  required
+                  onChange={(e) => setSelectedType(e.target.value as DonationType)}
+                >
+                  <option value="one-time">One-time</option>
+                  <option value="recurring">Recurring</option>
+                </select>
+              </div>
+
+              {selectedType !== 'in-kind' && (
+                <div className="space-y-1">
+                  <Label htmlFor="amount" className="text-xs">Amount (ZAR)</Label>
+                  <Input
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    placeholder="100.00"
+                    required
+                    className="text-sm py-1"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <Label htmlFor="campaignName" className="text-xs">
+                  Campaign Name (Optional)
+                </Label>
+                <Input
+                  id="campaignName"
+                  name="campaignName"
+                  placeholder="Only for campaign donations"
+                  className="text-sm py-1"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="description" className="text-xs">
+                  Description (Optional)
+                </Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  placeholder="What is this donation for?"
+                  className="text-sm py-1"
+                  rows={3}
+                />
+              </div>
+
+              {selectedType !== 'in-kind' && (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="paymentType" className="text-xs">Payment Method</Label>
+                    <select
+                      id="paymentType"
+                      name="paymentType"
+                      className="w-full border rounded px-2 py-1 text-sm"
+                      value={paymentType}
+                      onChange={(e) => setPaymentType(e.target.value)}
+                      required
+                    >
+                      <option value="">Select Method</option>
+                      <option value="card">Credit/Debit Card</option>
+                      <option value="ewallet">Send Cash through E-Wallet</option>
+                    </select>
+                  </div>
+
+                  {paymentType === 'card' && (
+                    <div className="space-y-1">
+                      <Label htmlFor="cardName" className="text-xs">Cardholder Name</Label>
+                      <Input
+                        id="cardName"
+                        placeholder="John Doe"
+                        value={paymentData.cardName}
+                        onChange={(e) =>
+                          setPaymentData({ ...paymentData, cardName: e.target.value })
+                        }
+                        className="text-sm py-1"
+                      />
+                      {errors.cardName && <p className="text-red-500 text-xs">{errors.cardName}</p>}
+
+                      <Label htmlFor="cardNumber" className="text-xs">Card Number</Label>
+                      <Input
+                        id="cardNumber"
+                        placeholder="1234 5678 9012 3456"
+                        value={paymentData.cardNumber}
+                        onChange={(e) =>
+                          setPaymentData({ ...paymentData, cardNumber: formatCardNumber(e.target.value) })
+                        }
+                        className="text-sm py-1"
+                      />
+                      {errors.cardNumber && <p className="text-red-500 text-xs">{errors.cardNumber}</p>}
+
+                      <div className="flex space-x-2">
+                        <div className="flex-1">
+                          <Label htmlFor="expiry" className="text-xs">Expiry (MM/YY)</Label>
+                          <Input
+                            id="expiry"
+                            placeholder="MM/YY"
+                            value={paymentData.expiry}
+                            onChange={(e) =>
+                              setPaymentData({ ...paymentData, expiry: formatExpiry(e.target.value) })
+                            }
+                            className="text-sm py-1"
+                          />
+                          {errors.expiry && <p className="text-red-500 text-xs">{errors.expiry}</p>}
+                        </div>
+
+                        <div className="flex-1">
+                          <Label htmlFor="cvv" className="text-xs">CVV</Label>
+                          <Input
+                            id="cvv"
+                            placeholder="123"
+                            maxLength={4}
+                            value={paymentData.cvv}
+                            onChange={(e) =>
+                              setPaymentData({ ...paymentData, cvv: e.target.value.replace(/\D/g, '') })
+                            }
+                            className="text-sm py-1"
+                          />
+                          {errors.cvv && <p className="text-red-500 text-xs">{errors.cvv}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentType === 'ewallet' && (
+                    <div className="space-y-1">
+                      <Label htmlFor="walletId" className="text-xs">E-Wallet ID or Number</Label>
+                      <Input
+                        id="walletId"
+                        placeholder="GCash / PayMaya / SnapScan ID"
+                        value={paymentData.walletId}
+                        onChange={(e) =>
+                          setPaymentData({ ...paymentData, walletId: e.target.value })
+                        }
+                        className="text-sm py-1"
+                      />
+                      {errors.walletId && <p className="text-red-500 text-xs">{errors.walletId}</p>}
+                    </div>
+                  )}
+                </>
+              )}
+
+              <Button type="submit" className="w-full text-sm py-1">
+                Submit Donation
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
 
         <div>
           <h2 className="text-2xl font-bold mb-4">Donation History</h2>
